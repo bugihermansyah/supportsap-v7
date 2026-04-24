@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Filament\Resources\Support\SupportReportings\Tables;
+
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+
+use Illuminate\Database\Eloquent\Builder;
+
+class SupportReportingsTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->whereHas('users', fn (Builder $q) => $q->where('user_id', auth()->id())))
+            ->columns([
+                TextColumn::make('outstanding.location.name')
+                    ->label('Location')
+                    ->searchable(),
+                TextColumn::make('outstanding.reporter')
+                    ->label('Reporter')
+                    ->searchable()
+                    ->formatStateUsing(fn ($state) => ucwords($state)),
+                TextColumn::make('users.name')
+                    ->label('Support')
+                    ->badge()
+                    ->searchable(),
+                    // ->listWithLineBreaks(),
+                TextColumn::make('date_visit')
+                    ->label('Date Visit')
+                    ->date(),
+                TextColumn::make('outstanding.title')
+                    ->label('Problem')
+                    ->searchable(),
+                TextColumn::make('cause')
+                    ->label('Cause')
+                    ->searchable(),
+                TextColumn::make('action')
+                    ->label('Action')
+                    ->searchable()
+                    ->wrap()
+                    ->lineClamp(2)
+                    ->html(),
+                TextColumn::make('status'),
+            ])
+            ->defaultSort('date_visit', 'desc')
+            ->filters([
+                //
+            ])
+            ->recordActions([
+                ViewAction::make(),
+                EditAction::make(),
+            ])
+            ->toolbarActions([]);
+    }
+}

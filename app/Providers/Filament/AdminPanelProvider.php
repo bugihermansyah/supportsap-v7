@@ -1,0 +1,111 @@
+<?php
+
+namespace App\Providers\Filament;
+
+use App\Filament\Resources\Outstandings\OutstandingResource;
+use App\Filament\Resources\Users\UserResource;
+use Awcodes\QuickCreate\QuickCreatePlugin;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Devonab\FilamentEasyFooter\EasyFooterPlugin;
+use Elemind\FilamentECharts\FilamentEChartsPlugin;
+use Filament\Http\Middleware\Authenticate;
+use Filament\Http\Middleware\AuthenticateSession;
+use Filament\Http\Middleware\DisableBladeIconComponents;
+use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Pages\Dashboard;
+use Filament\Panel;
+use Filament\PanelProvider;
+use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Width;
+use Filament\Widgets\AccountWidget;
+use Filament\Widgets\FilamentInfoWidget;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Inerba\DbConfig\DbConfig;
+use Jacobtims\FilamentLogger\FilamentLoggerPlugin;
+use Jeffgreco13\FilamentBreezy\BreezyCore;
+use SpyApp\ThemeEdinburgh\ThemeEdinburghPlugin;
+use Swis\Filament\Backgrounds\FilamentBackgroundsPlugin;
+
+class AdminPanelProvider extends PanelProvider
+{
+    public function panel(Panel $panel): Panel
+    {
+        return $panel
+            ->default()
+            ->id('admin')
+            ->path('/')
+            ->login()
+            ->colors([
+                'primary' => Color::Taupe,
+            ])
+            ->brandName(DbConfig::get("general.brand_name"))
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('20s')
+            ->sidebarCollapsibleOnDesktop()
+            ->breadcrumbs(false)
+            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
+            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
+            ->pages([
+                Dashboard::class,
+            ])
+            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
+            ->widgets([
+                // AccountWidget::class,
+                // FilamentInfoWidget::class,
+            ])
+            ->middleware([
+                EncryptCookies::class,
+                AddQueuedCookiesToResponse::class,
+                StartSession::class,
+                AuthenticateSession::class,
+                ShareErrorsFromSession::class,
+                PreventRequestForgery::class,
+                SubstituteBindings::class,
+                DisableBladeIconComponents::class,
+                DispatchServingFilamentEvent::class,
+            ])
+            ->plugins([
+                FilamentShieldPlugin::make()
+                    ->gridColumns([
+                        'default' => 1,
+                        'sm' => 4,
+                        'lg' => 6
+                    ])
+                    ->sectionColumnSpan(1)
+                    ->checkboxListColumns([
+                        'default' => 1,
+                        'sm' => 2,
+                        'lg' => 4,
+                    ])
+                    ->resourceCheckboxListColumns([
+                        'default' => 1,
+                        'sm' => 2,
+                    ]),
+                ThemeEdinburghPlugin::make(),
+                FilamentBackgroundsPlugin::make(),
+                FilamentLoggerPlugin::make(),
+                BreezyCore::make()
+                    ->myProfile(),
+                QuickCreatePlugin::make()
+                    ->includes([
+                        OutstandingResource::class,
+                    ]),
+                FilamentEChartsPlugin::make(),
+                EasyFooterPlugin::make()
+                    ->withFooterPosition('footer')
+                    ->withSentence('Made with ❤️ by @bugihermansyah  | v5.0.0 |')
+                    ->withLoadTime(),
+            ])
+            ->sidebarWidth('14rem')
+            ->authMiddleware([
+                Authenticate::class,
+            ])
+            ->maxContentWidth(Width::Full)
+            ->viteTheme('resources/css/filament/admin/theme.css');
+    }
+}

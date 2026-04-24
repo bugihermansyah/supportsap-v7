@@ -1,0 +1,28 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+@import '../../../../vendor/spykapps/theme-edinburgh/resources/css/edinburgh.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+@source '../../../../vendor/jeffgreco13/filament-breezy/resources/**/*';
+@source '../../../../vendor/awcodes/filament-quick-create/resources/**/*.blade.php';
+@source '../../../../vendor/devonab/filament-easy-footer/resources/views/**/*';
+
+.fi-ta-header-cell,
+.fi-ta-selection-cell,
+.fi-ta-empty-header-cell {
+    border-bottom: initial;
+    background-color: initial;
+}
+
+/* Fix: Table content rows left-aligned to match header */
+/* Edinburgh theme adds padding to .fi-ta-cell, but Filament's .fi-ta-text/.fi-ta-select */
+/* also have their own px-3 py-4. Remove inner padding so content aligns with header. */
+.fi-ta-cell .fi-ta-text:not(.fi-inline),
+.fi-ta-cell .fi-ta-select:not(.fi-inline) {
+    padding: 0 !important;
+}
+
+/* Fix: Edinburgh theme sets overflow:hidden on table repeater, clipping Select dropdowns */
+.fi-fo-table-repeater>table {
+    overflow: visible !important;
+}
