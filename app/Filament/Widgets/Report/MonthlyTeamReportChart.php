@@ -5,62 +5,44 @@ namespace App\Filament\Widgets\Report;
 use App\Models\Location;
 use App\Models\Outstanding;
 use App\Models\Reporting;
-use App\Models\Team;
-use Elemind\FilamentECharts\Widgets\EChartWidget;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Form;
 use Filament\Schemas\Schema;
-use Illuminate\Support\Facades\DB;
+use Filament\Widgets\ChartWidget\Concerns\HasFiltersSchema;
+use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
 
-use Filament\Actions\Concerns\InteractsWithActions;
-use Filament\Actions\Contracts\HasActions;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Contracts\HasForms;
-
-class MonthlyTeamReportChart extends EChartWidget implements HasForms, HasActions
+class MonthlyTeamReportChart extends ApexChartWidget
 {
-    use InteractsWithForms;
-    use InteractsWithActions;
+    use HasFiltersSchema;
 
     protected static bool $isDiscovered = false;
 
-    protected static ?string $chartId = 'monthlyTeamReportChart';
+    protected bool $hasDeferredFilters = true;
+    
+    protected static ?string $loadingIndicator = 'Loading...';
 
     protected static ?string $heading = 'Monthly Team Report Summary';
 
     protected int | string | array $columnSpan = 'full';
 
-    protected function getContentHeight(): ?int
+   // protected static ?string $maxHeight = '500px';
+
+    public function filtersSchema(Schema $schema): Schema
     {
-        return 500;
+        return $schema->components([
+            Select::make('year')
+                ->label('Year')
+                ->options($this->getYearOptions())
+                ->default((string) now()->year),
+            Select::make('team')
+                ->label('Team')
+                ->placeholder('All Teams')
+                ->options(\App\Models\Team::pluck('name', 'id')),
+        ]);
     }
 
-    public ?string $filterYear = null;
-    public ?string $filterTeam = null;
-
-    public function mount(): void
-    {
-        $this->filterYear = (string) now()->year;
-        parent::mount();
-    }
-
-    public function updatedFilterYear()
+    public function updatedInteractsWithSchemas(string $statePath): void
     {
         $this->updateOptions();
-    }
-
-    public function updatedFilterTeam()
-    {
-        $this->updateOptions();
-    }
-
-    public function getFiltersTriggerAction(): \Filament\Actions\Action
-    {
-        return \Filament\Actions\Action::make('filter')
-            ->label('Filters')
-            ->icon('heroicon-m-funnel')
-            ->color('gray')
-            ->button();
     }
 
     protected function getYearOptions(): array
@@ -81,95 +63,82 @@ class MonthlyTeamReportChart extends EChartWidget implements HasForms, HasAction
         return array_combine($years, $years);
     }
 
-    public function getFiltersSchema(): \Filament\Schemas\Schema
-    {
-        return \Filament\Schemas\Schema::make($this)
-            ->components([
-                Select::make('filterYear')
-                    ->label('Year')
-                    ->options($this->getYearOptions())
-                    ->live(),
-                Select::make('filterTeam')
-                    ->label('Team')
-                    ->placeholder('All Teams')
-                    ->options(\App\Models\Team::pluck('name', 'id'))
-                    ->live(),
-            ]);
-    }
-
     protected function getOptions(): array
     {
-        $year = (int) ($this->filterYear ?? now()->year);
-        $teamId = $this->filterTeam;
+        $year = (int) ($this->filters['year'] ?? now()->year);
+        $teamId = $this->filters['team'] ?? null;
 
         $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         return [
-            'tooltip' => [
-                'trigger' => 'axis',
-                'axisPointer' => ['type' => 'shadow'],
-            ],
-            'legend' => [
-                'bottom' => '0',
-                'textStyle' => ['fontSize' => 11],
-            ],
-            'grid' => [
-                'top' => '20',
-                'left' => '40',
-                'right' => '10',
-                'bottom' => '60',
-            ],
-            'xAxis' => [
-                'type' => 'category',
-                'data' => $months,
-            ],
-            'yAxis' => [
-                'type' => 'value',
+            'chart' => [
+                'type' => 'bar',
+                'height' => 500,
             ],
             'series' => [
                 [
-                    'name' => 'Total Outstanding',
-                    'type' => 'bar',
-                    'data' => $this->getTotalOutstandingPerMonth($year, $teamId),
-                    'itemStyle' => ['color' => '#10b981'],
+                    'name' => 'Total Lokasi',
+                    'data' => $this->getCumulativeLocationsPerMonth($year, $teamId),
                 ],
                 [
-                    'name' => 'Total Lokasi',
-                    'type' => 'bar',
-                    'data' => $this->getCumulativeLocationsPerMonth($year, $teamId),
-                    'itemStyle' => ['color' => '#f59e0b'],
+                    'name' => 'Total Outstanding',
+                    'data' => $this->getTotalOutstandingPerMonth($year, $teamId),
                 ],
                 [
                     'name' => 'Total Lokasi Masalah',
-                    'type' => 'bar',
                     'data' => $this->getUniqueLocationsPerMonth($year, $teamId),
-                    'itemStyle' => ['color' => '#3b82f6'],
                 ],
                 [
                     'name' => 'Total Visit',
-                    'type' => 'bar',
                     'data' => $this->getTotalVisitData($year, $teamId),
-                    'itemStyle' => ['color' => '#ef4444'],
                 ],
                 [
                     'name' => 'Total LPM 1',
-                    'type' => 'bar',
                     'data' => $this->getLaporanAwalMasukData($year, $teamId),
-                    'itemStyle' => ['color' => '#8b5cf6'],
                 ],
                 [
                     'name' => 'Total SLA Visit',
-                    'type' => 'bar',
                     'data' => $this->getTotalSlaVisitData($year, $teamId),
-                    'itemStyle' => ['color' => '#f97316'],
                 ],
                 [
                     'name' => 'Total Remote',
-                    'type' => 'bar',
                     'data' => $this->getTotalRemoteData($year, $teamId),
-                    'itemStyle' => ['color' => '#22d3ee'],
                 ],
             ],
+            'plotOptions' => [
+                'bar' => [
+                    'dataLabels' => [
+                        'orientation' => 'vertical',
+                        'position' => 'center',
+                    ],
+                ],
+            ],
+            'dataLabels' => [
+                'enabled' => true,
+                'style' => [
+                    'fontFamily' => 'inherit',
+                ],
+            ],
+            'xaxis' => [
+                'categories' => $months,
+                'labels' => [
+                    'style' => [
+                        'fontFamily' => 'inherit',
+                    ],
+                ],
+            ],
+            'tooltip' => [
+                'shared' => true,
+                'intersect' => false
+            ],
+            'yaxis' => [
+                'labels' => [
+                    'style' => [
+                        'fontFamily' => 'inherit',
+                    ],
+                ],
+            ],
+            'colors' => ['#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#f97316', '#22d3ee'],
         ];
     }
 
@@ -198,28 +167,46 @@ class MonthlyTeamReportChart extends EChartWidget implements HasForms, HasAction
 
     protected function getCumulativeLocationsPerMonth($year, $teamId): array
     {
+        // Inisialisasi array data untuk 12 bulan
         $data = array_fill(0, 12, 0);
 
+        // Hitung total lokasi sebelum tahun yang dipilih
         $previousTotal = Location::query()
             ->whereYear('created_at', '<', $year)
-            ->where('status', '!=', 'dismantle');
+            ->whereNot('locations.status', 'dismantle');
 
         if ($teamId) {
             $previousTotal->where('team_id', $teamId);
         }
 
-        $previousTotalCount = $previousTotal->count();
+        $previousTotal = $previousTotal->count(); // Total lokasi sebelum tahun yang dipilih
 
+        $currentYear = now()->year;
+        $currentMonth = now()->month;
+
+        // Perulangan untuk setiap bulan dalam tahun yang dipilih
         for ($month = 1; $month <= 12; $month++) {
+            // Jika tahun yang dipilih adalah tahun ini, jangan hitung bulan yang belum lewat (set ke 0)
+            if ($year == $currentYear && $month > $currentMonth) {
+                $data[$month - 1] = 0;
+                continue;
+            }
+
+            $endDate = \Carbon\Carbon::create($year, $month)->endOfMonth()->format('Y-m-d 23:59:59');
+
             $query = Location::query()
-                ->whereBetween('created_at', ["$year-01-01", "$year-$month-31"])
-                ->where('status', '!=', 'dismantle');
+                ->whereBetween('created_at', ["$year-01-01 00:00:00", $endDate]) // Hitung lokasi dalam tahun ini sampai akhir bulan tertentu
+                ->whereNot('locations.status', 'dismantle');
 
             if ($teamId) {
                 $query->where('team_id', $teamId);
             }
 
-            $data[$month - 1] = $previousTotalCount + $query->count();
+            // Hitung total lokasi dalam tahun yang dipilih sampai bulan tertentu
+            $totalLocations = $query->count();
+
+            // Akumulasi dengan total lokasi dari tahun sebelumnya
+            $data[$month - 1] = $previousTotal + $totalLocations;
         }
 
         return $data;

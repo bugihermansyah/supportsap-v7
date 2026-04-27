@@ -8,4 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     use HasUlids;
+
+    public function outstandings()
+    {
+        return $this->hasMany(Outstanding::class);
+    }
 }

@@ -121,7 +121,7 @@ return [
         'generate' => true,
         'methods' => [
             'viewAny',
-            'view',
+            // 'view',
             'create',
             'update',
             'delete',

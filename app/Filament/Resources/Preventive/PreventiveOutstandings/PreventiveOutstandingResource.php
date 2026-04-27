@@ -9,7 +9,7 @@ use App\Filament\Resources\Preventive\PreventiveOutstandings\Pages\ViewPreventiv
 use App\Filament\Resources\Preventive\PreventiveOutstandings\Schemas\PreventiveOutstandingForm;
 use App\Filament\Resources\Preventive\PreventiveOutstandings\Schemas\PreventiveOutstandingInfolist;
 use App\Filament\Resources\Preventive\PreventiveOutstandings\Tables\PreventiveOutstandingsTable;
-use App\Models\PreventiveOutstanding;
+use App\Models\Outstanding;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -18,13 +18,20 @@ use Filament\Tables\Table;
 
 class PreventiveOutstandingResource extends Resource
 {
-    protected static ?string $model = PreventiveOutstanding::class;
+    protected static ?string $model = Outstanding::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $recordTitleAttribute = 'number';
+    
+    protected static ?string $modelLabel = 'Outstanding (Preventive)';
 
-    protected static ?string $modelLabel = 'Outstanding';
+    protected static ?string $navigationLabel = 'Outstanding (Preventive)';
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasRole('head_preventive', 'preventive');
+    }
 
     public static function form(Schema $schema): Schema
     {

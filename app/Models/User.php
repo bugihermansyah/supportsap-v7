@@ -13,8 +13,10 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Traits\HasUserHelpers;
+use Tilto\Commentable\Contracts\Commenter;
+use Tilto\Commentable\Traits\IsCommenter;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, Commenter
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory;
@@ -24,6 +26,7 @@ class User extends Authenticatable implements FilamentUser
     use HasPanelShield;
     use HasRoles;
     use Notifiable;
+    use IsCommenter;
 
     protected $hidden = [
         'password',

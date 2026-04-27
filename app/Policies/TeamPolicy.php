@@ -17,11 +17,6 @@ class TeamPolicy
         return $authUser->can('view_any_team');
     }
 
-    public function view(AuthUser $authUser, Team $team): bool
-    {
-        return $authUser->can('view_team');
-    }
-
     public function create(AuthUser $authUser): bool
     {
         return $authUser->can('create_team');

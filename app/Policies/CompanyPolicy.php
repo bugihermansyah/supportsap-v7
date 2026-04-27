@@ -17,11 +17,6 @@ class CompanyPolicy
         return $authUser->can('view_any_company');
     }
 
-    public function view(AuthUser $authUser, Company $company): bool
-    {
-        return $authUser->can('view_company');
-    }
-
     public function create(AuthUser $authUser): bool
     {
         return $authUser->can('create_company');

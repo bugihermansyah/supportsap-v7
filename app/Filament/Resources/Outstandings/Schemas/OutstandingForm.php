@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Repeater\TableColumn;
@@ -30,6 +31,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Tilto\Commentable\Filament\Infolists\Components\CommentsEntry;
 
 class OutstandingForm
 {
@@ -50,7 +52,7 @@ class OutstandingForm
                     Section::make()
                         ->schema([
                             Toggle::make('task')
-                                ->label('Existing <-> New')
+                                ->label('New Outstanding')
                                 ->dehydrated(false)
                                 ->live(),
                             Select::make('location_id')
@@ -108,7 +110,7 @@ class OutstandingForm
                                 ->required()
                                 ->native(true),
                             DatePicker::make('date_visit')
-                                ->label('For Visit Date')
+                                ->label('Visit Date')
                                 ->default(Carbon::now())
                                 ->required()
                                 ->native(true),
@@ -256,9 +258,23 @@ class OutstandingForm
                                 ->required()
                                 ->columnSpanFull(),
                             RichEditor::make('note')
-                                ->columnSpan('full'),
+                                ->columnSpanFull(),
                         ])
                         ->columns(2),
+                    Section::make('Comments')
+                        ->schema([
+                            CommentsEntry::make('comments')
+                                ->hiddenLabel()
+                                ->buttonPosition('right')
+                                ->nestable()
+                                ->mentions()
+                        ])
+                        ->collapsed(),
+                ])
+                ->columnSpan(3),
+
+            Group::make()
+                ->schema([         
                     Section::make('Status')
                         ->schema([
                             Checkbox::make('status')
@@ -268,12 +284,7 @@ class OutstandingForm
                             Checkbox::make('is_oncall')
                                 ->label('Oncall'),
                         ])
-                        ->columns(3),
-                ])
-                ->columnSpan(3),
-
-            Group::make()
-                ->schema([                    
+                        ->columns(3),           
                     Section::make('Problem Unit')
                         ->schema([
                             ToggleButtons::make('is_type_problem')
@@ -282,7 +293,7 @@ class OutstandingForm
                                 ->columnSpanFull()
                                 ->required()
                                 ->inline(),
-                            \Filament\Forms\Components\Placeholder::make('table_repeater_style')
+                            Placeholder::make('table_repeater_style')
                                 ->hiddenLabel()
                                 ->content(new \Illuminate\Support\HtmlString('
                                     <style>

@@ -9,7 +9,7 @@ use App\Filament\Resources\Support\SupportReportings\Pages\ViewSupportReporting;
 use App\Filament\Resources\Support\SupportReportings\Schemas\SupportReportingForm;
 use App\Filament\Resources\Support\SupportReportings\Schemas\SupportReportingInfolist;
 use App\Filament\Resources\Support\SupportReportings\Tables\SupportReportingsTable;
-use App\Models\SupportReporting;
+use App\Models\Reporting;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -18,11 +18,15 @@ use Filament\Tables\Table;
 
 class SupportReportingResource extends Resource
 {
-    protected static ?string $model = SupportReporting::class;
+    protected static ?string $model = Reporting::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDevicePhoneMobile;
 
     // protected static ?string $recordTitleAttribute = 'location_title';
+
+    protected static ?string $modelLabel = 'Support';
+
+    protected static ?string $navigationLabel = 'Support';
 
     public static function form(Schema $schema): Schema
     {

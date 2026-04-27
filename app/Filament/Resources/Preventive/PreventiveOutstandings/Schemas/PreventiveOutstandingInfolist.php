@@ -11,6 +11,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Tilto\Commentable\Filament\Infolists\Components\CommentsEntry;
 
 class PreventiveOutstandingInfolist
 {
@@ -92,6 +93,16 @@ class PreventiveOutstandingInfolist
                                             ->limitedRemainingText()
                                             ->circular(),
                                     ])
+                            ])
+                    ])
+                    ->columnSpan(4),
+                Group::make()
+                    ->schema([
+                        Section::make()
+                            ->schema([
+                                CommentsEntry::make('comments')
+                                    ->buttonPosition('right')
+                                    ->nestable()
                             ])
                     ])
                     ->columnSpan(4),

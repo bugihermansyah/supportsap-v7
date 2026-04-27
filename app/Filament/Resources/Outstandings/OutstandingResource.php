@@ -28,6 +28,10 @@ class OutstandingResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'number';
 
+    protected static ?string $modelLabel = 'Outstanding';
+
+    protected static ?string $navigationLabel = 'Outstanding';
+
     protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
     public static function form(Schema $schema): Schema

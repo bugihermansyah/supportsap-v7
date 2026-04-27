@@ -87,6 +87,8 @@ class CreateOutstanding extends CreateRecord
                     $locationName = $location->name;
                     $title = $outstanding->title;
                     $dateVisit = $data['date_visit'];
+                    $reporter = $outstanding->reporter ?? '-';
+                    $reporterName = $outstanding->reporter_name ?? '-';
 
                     // Collect all support emails
                     $supportEmails = User::whereIn('id', $data['user_id'])
@@ -101,7 +103,9 @@ class CreateOutstanding extends CreateRecord
                                 $dateVisit,
                                 $companyAlias,
                                 $locationName,
-                                $title
+                                $title,
+                                $reporter,
+                                $reporterName
                             )->onQueue('scheduleEmails');
                         }
                     }
@@ -142,6 +146,8 @@ class CreateOutstanding extends CreateRecord
                     $locationName = $location->name;
                     $title = $outstanding->title;
                     $dateVisit = $data['date_visit'];
+                    $reporter = $outstanding->reporter ?? '-';
+                    $reporterName = $outstanding->reporter_name ?? '-';
 
                     // Collect all support emails
                     $supportEmails = User::whereIn('id', $data['user_id'])
@@ -156,7 +162,9 @@ class CreateOutstanding extends CreateRecord
                                 $dateVisit,
                                 $companyAlias,
                                 $locationName,
-                                $title
+                                $title,
+                                $reporter,
+                                $reporterName
                             )->onQueue('scheduleEmails');
                         }
                     }

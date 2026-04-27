@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ReportStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,7 @@ class Reporting extends Model implements HasMedia
     protected function casts(): array
     {
         return [
+            'status' => ReportStatus::class,
             'email_to' => 'array',
             'email_cc' => 'array',
         ];
@@ -48,8 +50,16 @@ class Reporting extends Model implements HasMedia
     {
         return $this->hasMany(ReportingUser::class);
     }
-    public function getMorphClass()
+
+    public function getLocationTitleAttribute(): string
     {
-        return SupportReporting::class;
+        return "{$this->outstanding?->location?->name} - " . ($this->outstanding?->title);
+    }
+
+    protected static function booted()
+    {
+        static::deleting(function (Reporting $reporting) {
+            $reporting->reportingUsers()->delete();
+        });
     }
 }

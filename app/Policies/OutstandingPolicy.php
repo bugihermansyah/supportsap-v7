@@ -17,11 +17,6 @@ class OutstandingPolicy
         return $authUser->can('view_any_outstanding');
     }
 
-    public function view(AuthUser $authUser, Outstanding $outstanding): bool
-    {
-        return $authUser->can('view_outstanding');
-    }
-
     public function create(AuthUser $authUser): bool
     {
         return $authUser->can('create_outstanding');

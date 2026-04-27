@@ -65,7 +65,7 @@ return [
 
     'resource_permission_prefixes_labels' => [
         'view' => 'View',
-        'view_any' => 'View Any',
+        'view_any' => 'Views',
         'create' => 'Create',
         'update' => 'Update',
         'delete' => 'Delete',

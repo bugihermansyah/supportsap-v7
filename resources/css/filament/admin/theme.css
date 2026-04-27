@@ -1,11 +1,14 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
 @import '../../../../vendor/spykapps/theme-edinburgh/resources/css/edinburgh.css';
+@import '../../../../vendor/businesstilto/commentable/resources/css/plugin.css';
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 @source '../../../../vendor/jeffgreco13/filament-breezy/resources/**/*';
 @source '../../../../vendor/awcodes/filament-quick-create/resources/**/*.blade.php';
 @source '../../../../vendor/devonab/filament-easy-footer/resources/views/**/*';
+
+@plugin "@tailwindcss/typography";
 
 .fi-ta-header-cell,
 .fi-ta-selection-cell,
@@ -25,4 +28,10 @@
 /* Fix: Edinburgh theme sets overflow:hidden on table repeater, clipping Select dropdowns */
 .fi-fo-table-repeater>table {
     overflow: visible !important;
+}
+
+span[data-type="mention"],
+a[data-type="mention"] {
+    @apply bg-primary-50 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400 my-0 inline-block rounded px-1 font-medium whitespace-nowrap no-underline;
+    text-decoration: none !important;
 }

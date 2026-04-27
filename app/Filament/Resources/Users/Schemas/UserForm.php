@@ -35,7 +35,7 @@ class UserForm
                     ->searchable()
                     ->preload()
                     ->required()
-                    ->disabled()
+                    // ->disabled()
                     ->multiple()
                     ->relationship('roles', 'name')
                     ->default(fn () => auth()->check() && auth()->user()->hasRole('head_support') ? [\Spatie\Permission\Models\Role::where('name', 'support')->value('id')] : null)
@@ -45,9 +45,9 @@ class UserForm
                     ->relationship('team', 'name')
                     ->label('Team')
                     ->searchable()
-                    ->disabled()
+                    // ->disabled()
                     ->preload()
-                    ->required()
+                    // ->required()
                     ->default(fn () => auth()->check() && auth()->user()->hasRole('head_support') ? auth()->user()->team_id : null),
             ]);
     }

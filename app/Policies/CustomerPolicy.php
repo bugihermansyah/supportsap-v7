@@ -17,11 +17,6 @@ class CustomerPolicy
         return $authUser->can('view_any_customer');
     }
 
-    public function view(AuthUser $authUser, Customer $customer): bool
-    {
-        return $authUser->can('view_customer');
-    }
-
     public function create(AuthUser $authUser): bool
     {
         return $authUser->can('create_customer');

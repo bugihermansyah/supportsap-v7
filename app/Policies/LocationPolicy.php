@@ -17,11 +17,6 @@ class LocationPolicy
         return $authUser->can('view_any_location');
     }
 
-    public function view(AuthUser $authUser, Location $location): bool
-    {
-        return $authUser->can('view_location');
-    }
-
     public function create(AuthUser $authUser): bool
     {
         return $authUser->can('create_location');

@@ -17,11 +17,6 @@ class ProductPolicy
         return $authUser->can('view_any_product');
     }
 
-    public function view(AuthUser $authUser, Product $product): bool
-    {
-        return $authUser->can('view_product');
-    }
-
     public function create(AuthUser $authUser): bool
     {
         return $authUser->can('create_product');

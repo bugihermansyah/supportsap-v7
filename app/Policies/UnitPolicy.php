@@ -17,11 +17,6 @@ class UnitPolicy
         return $authUser->can('view_any_unit');
     }
 
-    public function view(AuthUser $authUser, Unit $unit): bool
-    {
-        return $authUser->can('view_unit');
-    }
-
     public function create(AuthUser $authUser): bool
     {
         return $authUser->can('create_unit');

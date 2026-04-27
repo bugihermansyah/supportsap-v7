@@ -26,7 +26,8 @@ class HeadSupportOpenOutstanding extends TableWidget
                 return Reporting::query()
                     ->whereRaw('reportings.created_at = (SELECT MAX(r2.created_at) FROM reportings r2 WHERE r2.outstanding_id = reportings.outstanding_id)')
                     ->whereHas('outstanding', function ($query) use ($user) {
-                        $query->where('status', \App\Enums\OutstandingStatus::Open);
+                        $query->where('status', \App\Enums\OutstandingStatus::Open)
+                              ->where('reporter', 'client');
 
                         if ($user && $user->team_id && ! $user->hasRole('admin')) {
                             $query->whereHas('location', function ($q) use ($user) {
@@ -60,18 +61,22 @@ class HeadSupportOpenOutstanding extends TableWidget
                     ->sortable(query: function ($query, $direction) {
                         return $query->orderBy('outstandings.date_in', $direction);
                     })
+                    ->badge()
                     ->color(fn ($state) => match (true) {
                         $state >= 7 => 'danger',
                         $state >= 3 => 'warning',
                         default => 'gray',
-                    }),
+                    })
+                    ->formatStateUsing(fn ($state) => is_numeric($state)
+                        ? ($state >= 0 ? "{$state} days left" : abs($state) . ' days ago')
+                        : $state),
                 TextColumn::make('status')
                     ->label('Status')
                     ->sortable()
                     ->badge()
-                    ->formatStateUsing(fn ($state) => \App\Enums\ReportStatus::tryFrom($state)?->getLabel() ?? $state)
-                    ->color(fn ($state) => \App\Enums\ReportStatus::tryFrom($state)?->getColor() ?? 'gray')
-                    ->icon(fn ($state) => \App\Enums\ReportStatus::tryFrom($state)?->getIcon()),
+                    ->formatStateUsing(fn ($state) => $state instanceof \App\Enums\ReportStatus ? $state->getLabel() : (\App\Enums\ReportStatus::tryFrom($state)?->getLabel() ?? $state))
+                    ->color(fn ($state) => $state instanceof \App\Enums\ReportStatus ? $state->getColor() : (\App\Enums\ReportStatus::tryFrom($state)?->getColor() ?? 'gray'))
+                    ->icon(fn ($state) => $state instanceof \App\Enums\ReportStatus ? $state->getIcon() : \App\Enums\ReportStatus::tryFrom($state)?->getIcon()),
                 TextColumn::make('revisit')
                     ->label('Revisit')
                     ->sortable()

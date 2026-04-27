@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Pages;
+namespace App\Filament\Pages\Reports;
 
 use App\Filament\Widgets\Report\MonthlyTeamReportChart;
 use Filament\Pages\Page;
