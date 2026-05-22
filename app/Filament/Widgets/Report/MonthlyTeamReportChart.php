@@ -17,14 +17,14 @@ class MonthlyTeamReportChart extends ApexChartWidget
     protected static bool $isDiscovered = false;
 
     protected bool $hasDeferredFilters = true;
-    
+
     protected static ?string $loadingIndicator = 'Loading...';
 
     protected static ?string $heading = 'Monthly Team Report Summary';
 
     protected int | string | array $columnSpan = 'full';
 
-   // protected static ?string $maxHeight = '500px';
+    // protected static ?string $maxHeight = '500px';
 
     public function filtersSchema(Schema $schema): Schema
     {
@@ -40,8 +40,16 @@ class MonthlyTeamReportChart extends ApexChartWidget
         ]);
     }
 
-    public function updatedInteractsWithSchemas(string $statePath): void
+    public function applyDeferredFilters(): void
     {
+        $this->filters = $this->deferredFilters;
+        $this->updateOptions();
+    }
+
+    public function resetDeferredFilters(): void
+    {
+        $this->getFiltersSchema()->fill();
+        $this->filters = $this->deferredFilters;
         $this->updateOptions();
     }
 
@@ -52,12 +60,12 @@ class MonthlyTeamReportChart extends ApexChartWidget
             ->distinct()
             ->pluck('year')
             ->toArray();
-            
+
         $currentYear = now()->year;
         if (!in_array($currentYear, $years)) {
             $years[] = $currentYear;
         }
-        
+
         rsort($years);
 
         return array_combine($years, $years);
@@ -149,7 +157,7 @@ class MonthlyTeamReportChart extends ApexChartWidget
         $query = Outstanding::query()
             ->selectRaw('MONTH(date_in) as month, COUNT(*) as count')
             ->join('locations', 'outstandings.location_id', '=', 'locations.id')
-            ->where('outstandings.reporter', '!=', 'preventif')
+            ->where('outstandings.reporter', '=', 'client')
             ->whereYear('date_in', $year);
 
         if ($teamId) {
@@ -220,7 +228,7 @@ class MonthlyTeamReportChart extends ApexChartWidget
             ->selectRaw('MONTH(date_in) as month, COUNT(DISTINCT outstandings.location_id) as count')
             ->join('locations', 'outstandings.location_id', '=', 'locations.id')
             ->where('outstandings.status', '0') // Open / masalah
-            ->where('outstandings.reporter', '!=', 'preventif')
+            ->where('outstandings.reporter', '=', 'client')
             ->whereYear('date_in', $year);
 
         if ($teamId) {
@@ -244,7 +252,7 @@ class MonthlyTeamReportChart extends ApexChartWidget
             ->join('outstandings', 'reportings.outstanding_id', '=', 'outstandings.id')
             ->join('locations', 'outstandings.location_id', '=', 'locations.id')
             ->where('reportings.work', 'visit')
-            ->where('outstandings.reporter', '!=', 'preventif')
+            ->where('outstandings.reporter', '=', 'client')
             ->whereYear('reportings.date_visit', $year);
 
         if ($teamId) {
@@ -267,7 +275,7 @@ class MonthlyTeamReportChart extends ApexChartWidget
         $query = Outstanding::selectRaw('MONTH(date_in) as month, COUNT(*) as count')
             ->join('locations', 'outstandings.location_id', '=', 'locations.id')
             ->where('outstandings.lpm', 1)
-            ->where('outstandings.reporter', '!=', 'preventif')
+            ->where('outstandings.reporter', '=', 'client')
             ->whereYear('date_in', $year);
 
         if ($teamId) {
@@ -291,7 +299,7 @@ class MonthlyTeamReportChart extends ApexChartWidget
             ->join('locations', 'outstandings.location_id', '=', 'locations.id')
             ->whereNotNull('outstandings.date_visit')
             ->whereRaw('DATEDIFF(outstandings.date_visit, outstandings.date_in) <= 3')
-            ->where('outstandings.reporter', '!=', 'preventif')
+            ->where('outstandings.reporter', '=', 'client')
             ->whereYear('date_in', $year);
 
         if ($teamId) {
@@ -315,7 +323,7 @@ class MonthlyTeamReportChart extends ApexChartWidget
             ->join('outstandings', 'reportings.outstanding_id', '=', 'outstandings.id')
             ->join('locations', 'outstandings.location_id', '=', 'locations.id')
             ->where('reportings.work', 'remote')
-            ->where('outstandings.reporter', '!=', 'preventif')
+            ->where('outstandings.reporter', '=', 'client')
             ->whereYear('reportings.date_visit', $year);
 
         if ($teamId) {

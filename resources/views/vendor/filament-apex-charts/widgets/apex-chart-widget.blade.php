@@ -59,6 +59,25 @@
 
                             <div class="fi-wi-chart-filter-content">
                                 {{ $this->getFiltersSchema() }}
+
+                                @if (method_exists($this, 'hasDeferredFilters') && $this->hasDeferredFilters())
+                                    <div class="mt-3 flex gap-x-3">
+                                        <x-filament::button
+                                            wire:click="applyDeferredFilters"
+                                            size="sm"
+                                        >
+                                            {{ __('Apply') }}
+                                        </x-filament::button>
+
+                                        <x-filament::button
+                                            wire:click="resetDeferredFilters"
+                                            color="danger"
+                                            size="sm"
+                                        >
+                                            {{ __('Reset') }}
+                                        </x-filament::button>
+                                    </div>
+                                @endif
                             </div>
                         </x-filament::dropdown>
                     @endif
