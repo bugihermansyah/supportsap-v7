@@ -12,17 +12,22 @@ class CompanyForm
     {
         return $schema
             ->components([
-                TextInput::make('alias'),
+                TextInput::make('alias')
+                    ->unique(ignoreRecord: true)
+                    ->required(),
                 TextInput::make('name')
                     ->required(),
                 TextInput::make('tlp')
+                    ->label('Phone')
+                    ->tel()
                     ->required()
-                    ->default('0'),
+                    ->maxLength(15)
+                    ->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/'),
                 TextInput::make('email')
-                    ->label('Email address')
                     ->email()
-                    ->required()
-                    ->default('0'),
+                    ->unique(ignoreRecord: true)
+                    ->maxLength(100)
+                    ->required(),
                 Textarea::make('description')
                     ->columnSpanFull(),
             ]);

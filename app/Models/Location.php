@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Location extends Model
 {
@@ -61,12 +62,12 @@ class Location extends Model
             ->withPivot('is_to');
     }
 
-    public function customerLocations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function customerLocations(): HasMany
     {
         return $this->hasMany(CustomerLocation::class);
     }
 
-    public function contracts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function contracts(): HasMany
     {
         return $this->hasMany(Contract::class);
     }

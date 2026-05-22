@@ -16,6 +16,8 @@ class UnitsTable
     {
         return $table
             ->columns([
+                ImageColumn::make('image')
+                    ->imageGallery(),
                 TextColumn::make('name')
                     ->searchable(),
                 TextColumn::make('created_at')

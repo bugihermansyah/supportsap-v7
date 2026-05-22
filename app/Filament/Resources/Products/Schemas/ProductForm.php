@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Products\Schemas;
 
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 class ProductForm
@@ -12,18 +13,18 @@ class ProductForm
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->required(),
-                TextInput::make('sort')
-                    ->numeric(),
-                TextInput::make('point')
-                    ->required()
-                    ->numeric()
-                    ->default(0),
-                Select::make('group')
-                    ->options(['cass' => 'Cass', 'manless' => 'Manless', 'other' => 'Other'])
-                    ->default('cass')
-                    ->required(),
+                Section::make([
+                    TextInput::make('name')
+                        ->required(),
+                    Select::make('group')
+                        ->options(['cass' => 'Cass', 'manless' => 'Manless', 'other' => 'Other'])
+                        ->default('cass')
+                        ->required(),
+                    TextInput::make('point')
+                        ->required()
+                        ->numeric()
+                        ->default(0),
+                ])
             ]);
     }
 }

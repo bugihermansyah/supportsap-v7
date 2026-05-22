@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Locations;
 use App\Filament\Resources\Locations\Pages\CreateLocation;
 use App\Filament\Resources\Locations\Pages\EditLocation;
 use App\Filament\Resources\Locations\Pages\ListLocations;
+use App\Filament\Resources\Locations\RelationManagers\ContractsRelationManager;
 use App\Filament\Resources\Locations\Schemas\LocationForm;
 use App\Filament\Resources\Locations\Tables\LocationsTable;
 use App\Models\Location;
@@ -37,7 +38,7 @@ class LocationResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            ContractsRelationManager::class,
         ];
     }
 
@@ -45,7 +46,7 @@ class LocationResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        if (auth()->check() && !auth()->user()->hasRole('super_admin','owner','manager','helpdesk','head_preventive')) {
+        if (auth()->check() && !auth()->user()->hasRole('super_admin', 'owner', 'manager', 'helpdesk', 'head_preventive')) {
             $query->where('team_id', auth()->user()->team_id);
         }
 

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Units\Schemas;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 class UnitForm
@@ -13,21 +14,12 @@ class UnitForm
     {
         return $schema
             ->components([
-                TextInput::make('parent_id'),
-                TextInput::make('name')
-                    ->required(),
-                TextInput::make('sort')
-                    ->required()
-                    ->numeric()
-                    ->default(0),
-                FileUpload::make('image')
-                    ->image(),
-                Toggle::make('is_visible')
-                    ->required(),
-                TextInput::make('unit_category_id'),
-                TextInput::make('stock')
-                    ->numeric(),
-                TextInput::make('is_warehouse'),
+                Section::make([
+                    FileUpload::make('image')
+                        ->image(),
+                    TextInput::make('name')
+                        ->required(),
+                ])
             ]);
     }
 }

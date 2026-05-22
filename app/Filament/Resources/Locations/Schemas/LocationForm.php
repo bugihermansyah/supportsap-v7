@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\Locations\Schemas;
 
+use App\Enums\LocationStatus;
 use App\Models\Customer;
 use App\Models\User;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
@@ -16,6 +18,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
 
 class LocationForm
@@ -30,7 +33,31 @@ class LocationForm
                             ->schema([
                                 Select::make('company_id')
                                     ->label('Company')
-                                    ->relationship('company', 'alias'),
+                                    ->relationship('company', 'alias')
+                                    ->createOptionForm([
+                                        TextInput::make('alias')
+                                            ->unique(ignoreRecord: true)
+                                            ->required(),
+                                        TextInput::make('name')
+                                            ->required(),
+                                        TextInput::make('tlp')
+                                            ->label('Phone')
+                                            ->tel()
+                                            ->required()
+                                            ->maxLength(15)
+                                            ->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/'),
+                                        TextInput::make('email')
+                                            ->email()
+                                            ->unique(ignoreRecord: true)
+                                            ->maxLength(100)
+                                            ->required(),
+                                    ])
+                                    ->createOptionAction(function (Action $action) {
+                                        return $action
+                                            ->modalHeading('Create company')
+                                            ->modalSubmitActionLabel('Create company')
+                                            ->modalWidth(Width::Large);
+                                    }),
                                 TextInput::make('name')
                                     ->required(),
                                 Select::make('team_id')
@@ -39,20 +66,22 @@ class LocationForm
                                 Select::make('bd_id')
                                     ->label('Marketing')
                                     ->options(User::role('marketing')->pluck('name', 'id')),
-                                TextInput::make('area_status')
+                                Select::make('area_status')
+                                    ->options([
+                                        'in' => 'Dalam kota',
+                                        'out' => 'Luar kota',
+                                    ])
                                     ->required(),
-                                TextInput::make('user_id'),
+                                Select::make('user_id')
+                                    ->label('Pic')
+                                    ->options(User::role('support')->pluck('name', 'id')),
+                                Select::make('status')
+                                    ->options(LocationStatus::class)
+                                    ->required(),
+                                Textarea::make('address'),
+                                Textarea::make('description'),
                                 FileUpload::make('image')
-                                    ->image(),
-                                TextInput::make('type_contract'),
-                                TextInput::make('status')
-                                    ->required(),
-                                TextInput::make('address'),
-                                TextInput::make('latitude')
-                                    ->numeric(),
-                                TextInput::make('longitude')
-                                    ->numeric(),
-                                Textarea::make('description')
+                                    ->image()
                                     ->columnSpanFull(),
                             ])
                             ->columns(2),
@@ -64,8 +93,8 @@ class LocationForm
                         Section::make('Mail Client')
                             ->schema([
                                 Placeholder::make('table_repeater_style')
-                                ->hiddenLabel()
-                                ->content(new \Illuminate\Support\HtmlString('
+                                    ->hiddenLabel()
+                                    ->content(new \Illuminate\Support\HtmlString('
                                     <style>
                                         .force-table-repeater > table { display: table !important; width: 100% !important; }
                                         .force-table-repeater > table > thead { display: table-header-group !important; }
@@ -86,9 +115,9 @@ class LocationForm
                                     ->relationship()
                                     ->extraAttributes(['class' => 'force-table-repeater'])
                                     ->table([
-                                       TableColumn::make('Email'),
-                                       TableColumn::make('To')
-                                           ->width(75),
+                                        TableColumn::make('Email'),
+                                        TableColumn::make('To')
+                                            ->width(75),
                                     ])
                                     ->schema([
                                         Select::make('customer_id')
