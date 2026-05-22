@@ -8,4 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Customer extends Model
 {
     use HasUlids;
+
+    public function getNameEmailAttribute()
+    {
+        return "{$this->name} <{$this->email}>";
+    }
 }

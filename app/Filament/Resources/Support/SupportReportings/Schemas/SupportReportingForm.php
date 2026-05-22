@@ -7,6 +7,7 @@ use App\Enums\ReportStatus;
 use App\Models\Unit;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\RichEditor;
@@ -115,10 +116,28 @@ class SupportReportingForm
                                 ->options(OutstandingTypeProblem::class)
                                 ->formatStateUsing(fn(Model $record) => $record->outstanding->is_type_problem ?? 'NON')
                                 ->inline(),
+                            Placeholder::make('table_repeater_style')
+                                ->hiddenLabel()
+                                ->content(new \Illuminate\Support\HtmlString('
+                                    <style>
+                                        .force-table-repeater > table { display: table !important; width: 100% !important; }
+                                        .force-table-repeater > table > thead { display: table-header-group !important; }
+                                        .force-table-repeater > table > tbody { display: table-row-group !important; }
+                                        .force-table-repeater > table > tbody > tr { display: table-row !important; border:none !important; }
+                                        .force-table-repeater > table > tbody > tr > td { display: table-cell !important; padding: 0.5rem 0.75rem !important; vertical-align: middle; }
+                                        .force-table-repeater .fi-fo-field-label-content { display: none !important; }
+                                        .force-table-repeater .fi-in-entry-label { display: none !important; }
+                                        .force-table-repeater > table > tbody > tr > td.fi-hidden { display: none !important; }
+                                        .force-table-repeater > table > tbody > tr > td:last-child { width: 1% !important; padding: 0 0.5rem !important; white-space: nowrap; }
+                                        .force-table-repeater > table > thead > tr > th:last-child { width: 1% !important; padding: 0 !important; }
+                                        .force-table-repeater > table > tbody > tr > td > .fi-fo-table-repeater-actions { padding: 0 !important; width: auto !important; margin: 0 !important; justify-content: center; }
+                                    </style>
+                                ')),
                             Repeater::make('outstandingUnits')
                                 ->label('Unit')
                                 ->hiddenLabel()
                                 ->relationship()
+                                ->extraAttributes(['class' => 'force-table-repeater'])
                                 ->reorderable(false)
                                 ->defaultItems(1)
                                 ->minItems(1)

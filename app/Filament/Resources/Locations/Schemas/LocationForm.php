@@ -2,11 +2,21 @@
 
 namespace App\Filament\Resources\Locations\Schemas;
 
+use App\Models\Customer;
+use App\Models\User;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Tables\Columns\TextColumn;
 
 class LocationForm
 {
@@ -14,27 +24,89 @@ class LocationForm
     {
         return $schema
             ->components([
-                TextInput::make('company_id'),
-                TextInput::make('name')
-                    ->required(),
-                TextInput::make('team_id'),
-                TextInput::make('bd_id'),
-                TextInput::make('area_status')
-                    ->required(),
-                TextInput::make('user_id'),
-                FileUpload::make('image')
-                    ->image(),
-                TextInput::make('type_contract'),
-                TextInput::make('status')
-                    ->required(),
-                DatePicker::make('first_project'),
-                TextInput::make('address'),
-                TextInput::make('latitude')
-                    ->numeric(),
-                TextInput::make('longitude')
-                    ->numeric(),
-                Textarea::make('description')
-                    ->columnSpanFull(),
-            ]);
+                Group::make()
+                    ->schema([
+                        Section::make()
+                            ->schema([
+                                Select::make('company_id')
+                                    ->label('Company')
+                                    ->relationship('company', 'alias'),
+                                TextInput::make('name')
+                                    ->required(),
+                                Select::make('team_id')
+                                    ->label('Team')
+                                    ->relationship('team', 'name'),
+                                Select::make('bd_id')
+                                    ->label('Marketing')
+                                    ->options(User::role('marketing')->pluck('name', 'id')),
+                                TextInput::make('area_status')
+                                    ->required(),
+                                TextInput::make('user_id'),
+                                FileUpload::make('image')
+                                    ->image(),
+                                TextInput::make('type_contract'),
+                                TextInput::make('status')
+                                    ->required(),
+                                TextInput::make('address'),
+                                TextInput::make('latitude')
+                                    ->numeric(),
+                                TextInput::make('longitude')
+                                    ->numeric(),
+                                Textarea::make('description')
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(2),
+
+                    ])
+                    ->columnSpan(2),
+                Group::make()
+                    ->schema([
+                        Section::make('Mail Client')
+                            ->schema([
+                                Placeholder::make('table_repeater_style')
+                                ->hiddenLabel()
+                                ->content(new \Illuminate\Support\HtmlString('
+                                    <style>
+                                        .force-table-repeater > table { display: table !important; width: 100% !important; }
+                                        .force-table-repeater > table > thead { display: table-header-group !important; }
+                                        .force-table-repeater > table > tbody { display: table-row-group !important; }
+                                        .force-table-repeater > table > tbody > tr { display: table-row !important; border:none !important; }
+                                        .force-table-repeater > table > tbody > tr > td { display: table-cell !important; padding: 0.5rem 0.75rem !important; vertical-align: middle; }
+                                        .force-table-repeater .fi-fo-field-label-content { display: none !important; }
+                                        .force-table-repeater .fi-in-entry-label { display: none !important; }
+                                        .force-table-repeater > table > tbody > tr > td.fi-hidden { display: none !important; }
+                                        .force-table-repeater > table > tbody > tr > td:last-child { width: 1% !important; padding: 0 0.5rem !important; white-space: nowrap; }
+                                        .force-table-repeater > table > thead > tr > th:last-child { width: 1% !important; padding: 0 !important; }
+                                        .force-table-repeater > table > tbody > tr > td > .fi-fo-table-repeater-actions { padding: 0 !important; width: auto !important; margin: 0 !important; justify-content: center; }
+                                    </style>
+                                ')),
+                                Repeater::make('customerLocations')
+                                    ->label('Customer Location')
+                                    ->hiddenLabel()
+                                    ->relationship()
+                                    ->extraAttributes(['class' => 'force-table-repeater'])
+                                    ->table([
+                                       TableColumn::make('Email'),
+                                       TableColumn::make('To')
+                                           ->width(75),
+                                    ])
+                                    ->schema([
+                                        Select::make('customer_id')
+                                            ->label('Email')
+                                            ->options(Customer::all()->pluck('name_email', 'id'))
+                                            ->searchable()
+                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                            ->required(),
+                                        Toggle::make('is_to')
+                                            ->label('CC/To'),
+                                    ])
+                                    ->addActionLabel('Add to Mail')
+                                    ->defaultItems(1)
+                                    ->collapsible(),
+                            ])
+                    ])
+                    ->columnSpan(1),
+            ])
+            ->columns(3);
     }
 }

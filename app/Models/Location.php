@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\LocationStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +15,7 @@ class Location extends Model
     protected function casts(): array
     {
         return [
+            'status' => LocationStatus::class,
             'email_to' => 'array',
             'email_cc' => 'array'
         ];
@@ -57,5 +59,15 @@ class Location extends Model
     {
         return $this->belongsToMany(Customer::class, 'customer_locations')
             ->withPivot('is_to');
+    }
+
+    public function customerLocations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CustomerLocation::class);
+    }
+
+    public function contracts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Contract::class);
     }
 }
