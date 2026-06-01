@@ -26,6 +26,8 @@ class SupportReportingsTable
                 TextColumn::make('users.name')
                     ->label('Support')
                     ->badge()
+                    ->limitList(2)
+                    ->expandableLimitedList()
                     ->searchable(),
                     // ->listWithLineBreaks(),
                 TextColumn::make('date_visit')
