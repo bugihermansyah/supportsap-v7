@@ -20,13 +20,15 @@ class SupportReportingResource extends Resource
 {
     protected static ?string $model = Reporting::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDevicePhoneMobile;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+
+    protected static string |\UnitEnum| null $navigationGroup = 'Work';
 
     // protected static ?string $recordTitleAttribute = 'location_title';
 
-    protected static ?string $modelLabel = 'Support';
+    protected static ?string $modelLabel = 'Daily Reporting';
 
-    protected static ?string $navigationLabel = 'Support';
+    protected static ?string $navigationLabel = 'Daily Reporting';
 
     public static function form(Schema $schema): Schema
     {

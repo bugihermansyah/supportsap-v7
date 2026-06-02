@@ -100,6 +100,12 @@ class Schedules extends TableWidget
 
     public static function canView(): bool
     {
-        return auth()->user()?->hasRole('support');
+        // Selalu tampilkan di ScheduleDashboard
+        if (request()->routeIs('filament.admin.pages.schedule-dashboard')) {
+            return true;
+        }
+
+        // Di dashboard utama, sembunyikan untuk head_support
+        return !auth()->user()?->hasRole('head_support');
     }
 }

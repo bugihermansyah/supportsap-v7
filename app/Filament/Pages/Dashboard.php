@@ -12,18 +12,23 @@ class Dashboard extends BaseDashboard
 {
     public function getWidgets(): array
     {
-        return [
+        $widgets = [
             // Head Support widgets
             HeadSupportOverview::class,
 
             // Head Preventive widgets
             HeadPreventiveOverview::class,
 
-            // Support widgets
-            Schedules::class,
-
             // Preventif widgets
             PreventifSchedules::class,
         ];
+
+        // Support widgets — hanya tampilkan Schedules jika bukan head_support
+        // head_support melihat Schedules di ScheduleDashboard
+        if (!auth()->user()?->hasRole('head_support')) {
+            $widgets[] = Schedules::class;
+        }
+
+        return $widgets;
     }
 }

@@ -21,6 +21,8 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class ReportAllReporting extends Page implements HasTable
 {
@@ -374,6 +376,14 @@ class ReportAllReporting extends Page implements HasTable
             ->filtersTriggerAction(
                 fn (Action $action) => $action->button()->label('Filter')
             )
+            ->headerActions([
+                ExportAction::make()->exports([
+                    ExcelExport::make()
+                        ->askForWriterType()
+                        ->withFilename(date('Y-m-d H:i:s') . ' - report-all-reporting')
+                        ->fromTable()
+                ])
+            ])
             ->defaultSort('created_at', 'desc');
     }
 
