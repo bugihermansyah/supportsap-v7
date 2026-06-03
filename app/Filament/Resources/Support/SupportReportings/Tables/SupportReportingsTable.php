@@ -2,11 +2,11 @@
 
 namespace App\Filament\Resources\Support\SupportReportings\Tables;
 
+use App\Filament\Resources\Support\SupportReportings\SupportReportingResource;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-
 use Illuminate\Database\Eloquent\Builder;
 
 class SupportReportingsTable
@@ -29,7 +29,7 @@ class SupportReportingsTable
                     ->limitList(2)
                     ->expandableLimitedList()
                     ->searchable(),
-                    // ->listWithLineBreaks(),
+                // ->listWithLineBreaks(),
                 TextColumn::make('date_visit')
                     ->label('Date Visit')
                     ->date(),
@@ -52,7 +52,11 @@ class SupportReportingsTable
                 //
             ])
             ->recordActions([
-                ViewAction::make(),
+                Action::make('sendMail')
+                    ->label('Send Mail')
+                    ->icon('heroicon-o-envelope')
+                    ->color('success')
+                    ->url(fn ($record): string => SupportReportingResource::getUrl('send-email', ['record' => $record])),
                 EditAction::make(),
             ])
             ->toolbarActions([]);

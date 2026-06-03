@@ -2,7 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\SupportReporting;
+use App\Models\Reporting;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
@@ -18,7 +18,7 @@ class SupportReportingMail extends Mailable
      * Create a new message instance.
      */
     public function __construct(
-        public SupportReporting $reporting,
+        public Reporting $reporting,
     ) {}
 
     /**
@@ -56,7 +56,7 @@ class SupportReportingMail extends Mailable
     /**
      * Get the attachments for the message.
      *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {

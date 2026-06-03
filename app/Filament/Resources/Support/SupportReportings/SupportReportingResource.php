@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Support\SupportReportings;
 use App\Filament\Resources\Support\SupportReportings\Pages\CreateSupportReporting;
 use App\Filament\Resources\Support\SupportReportings\Pages\EditSupportReporting;
 use App\Filament\Resources\Support\SupportReportings\Pages\ListSupportReportings;
+use App\Filament\Resources\Support\SupportReportings\Pages\SendEmailReporting;
 use App\Filament\Resources\Support\SupportReportings\Pages\ViewSupportReporting;
 use App\Filament\Resources\Support\SupportReportings\Schemas\SupportReportingForm;
 use App\Filament\Resources\Support\SupportReportings\Schemas\SupportReportingInfolist;
@@ -22,7 +23,7 @@ class SupportReportingResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 
-    protected static string |\UnitEnum| null $navigationGroup = 'Work';
+    protected static string|\UnitEnum|null $navigationGroup = 'Work';
 
     // protected static ?string $recordTitleAttribute = 'location_title';
 
@@ -59,6 +60,7 @@ class SupportReportingResource extends Resource
             'create' => CreateSupportReporting::route('/create'),
             'view' => ViewSupportReporting::route('/{record}'),
             'edit' => EditSupportReporting::route('/{record}/edit'),
+            'send-email' => SendEmailReporting::route('/{record}/send-email'),
         ];
     }
 }
