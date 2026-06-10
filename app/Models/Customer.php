@@ -13,4 +13,9 @@ class Customer extends Model
     {
         return "{$this->name} <{$this->email}>";
     }
+
+    public function getNameTlpAttribute()
+    {
+        return "{$this->name} / {$this->tlp}";
+    }
 }

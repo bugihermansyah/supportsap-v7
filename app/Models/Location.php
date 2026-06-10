@@ -64,7 +64,12 @@ class Location extends Model
 
     public function customerLocations(): HasMany
     {
-        return $this->hasMany(CustomerLocation::class);
+        return $this->hasMany(CustomerLocation::class)->where('is_contact_shipping', 0);
+    }
+
+    public function contactShippings(): HasMany
+    {
+        return $this->hasMany(CustomerLocation::class)->where('is_contact_shipping', 1);
     }
 
     public function contracts(): HasMany

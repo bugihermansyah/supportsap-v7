@@ -13,6 +13,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Traits\HasUserHelpers;
+use NotificationChannels\WebPush\HasPushSubscriptions;
 use Tilto\Commentable\Contracts\Commenter;
 use Tilto\Commentable\Traits\IsCommenter;
 
@@ -22,6 +23,7 @@ class User extends Authenticatable implements FilamentUser, Commenter
     use HasFactory;
     use HasUuids;
     use HasUserHelpers;
+    use HasPushSubscriptions;
 
     use HasPanelShield;
     use HasRoles;

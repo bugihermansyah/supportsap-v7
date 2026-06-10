@@ -90,7 +90,7 @@ class LocationForm
                     ->columnSpan(2),
                 Group::make()
                     ->schema([
-                        Section::make('Mail Client')
+                        Section::make('Contacts')
                             ->schema([
                                 Placeholder::make('table_repeater_style')
                                     ->hiddenLabel()
@@ -110,29 +110,67 @@ class LocationForm
                                     </style>
                                 ')),
                                 Repeater::make('customerLocations')
-                                    ->label('Customer Location')
-                                    ->hiddenLabel()
+                                    ->label('Notification Email')
                                     ->relationship()
                                     ->extraAttributes(['class' => 'force-table-repeater'])
                                     ->table([
                                         TableColumn::make('Email'),
-                                        TableColumn::make('To')
+                                        TableColumn::make('CC/To')
                                             ->width(75),
                                     ])
                                     ->schema([
+                                        \Filament\Forms\Components\Hidden::make('is_contact_shipping')->default(0),
                                         Select::make('customer_id')
                                             ->label('Email')
                                             ->options(Customer::all()->pluck('name_email', 'id'))
                                             ->searchable()
                                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                            ->required(),
+                                            ->required()
+                                            ->createOptionForm([
+                                                TextInput::make('name')
+                                                    ->required(),
+                                                TextInput::make('tlp')
+                                                    ->required(),
+                                                TextInput::make('email')
+                                                    ->label('Email address')
+                                                    ->email()
+                                                    ->required(),
+                                                Textarea::make('description')
+                                                    ->columnSpanFull(),
+                                            ])
+                                            ->createOptionAction(function (Action $action) {
+                                                return $action
+                                                    ->modalHeading('Create contact')
+                                                    ->modalSubmitActionLabel('Create contact')
+                                                    ->modalWidth(Width::Large);
+                                            }),
                                         Toggle::make('is_to')
                                             ->label('CC/To'),
                                     ])
-                                    ->addActionLabel('Add to Mail')
+                                    ->addActionLabel('Add Email')
                                     ->defaultItems(1)
                                     ->collapsible(),
-                            ])
+                                    
+                                Repeater::make('contactShippings')
+                                    ->label('Contact Shipping')
+                                    ->relationship()
+                                    ->extraAttributes(['class' => 'force-table-repeater'])
+                                    ->table([
+                                        TableColumn::make('name_tlp'),
+                                    ])
+                                    ->schema([
+                                        \Filament\Forms\Components\Hidden::make('is_contact_shipping')->default(1),
+                                        Select::make('customer_id')
+                                            ->label('Contact')
+                                            ->options(Customer::all()->pluck('name_tlp', 'id'))
+                                            ->searchable()
+                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                            ->required(),
+                                    ])
+                                    ->addActionLabel('Add PIC')
+                                    ->defaultItems(1)
+                                    ->collapsible(),
+                            ]),
                     ])
                     ->columnSpan(1),
             ])
