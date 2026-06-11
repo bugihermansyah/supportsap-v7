@@ -31,6 +31,7 @@ use Leek\FilamentDiceBear\DiceBearProvider;
 use Leek\FilamentDiceBear\Enums\DiceBearStyle;
 use SpyApp\ThemeEdinburgh\ThemeEdinburghPlugin;
 use Swis\Filament\Backgrounds\FilamentBackgroundsPlugin;
+use Swis\Filament\Backgrounds\ImageProviders\MyImages;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -95,7 +96,10 @@ class AdminPanelProvider extends PanelProvider
                     ]),
                 ThemeEdinburghPlugin::make(),
                 FilamentApexChartsPlugin::make(),
-                FilamentBackgroundsPlugin::make(),
+                FilamentBackgroundsPlugin::make()->imageProvider(
+                    MyImages::make()
+                        ->directory('images/backgrounds')
+                ),
                 FilamentLoggerPlugin::make(),
                 BreezyCore::make()
                     ->myProfile(),
@@ -105,7 +109,7 @@ class AdminPanelProvider extends PanelProvider
                     ]),
                 EasyFooterPlugin::make()
                     ->withFooterPosition('footer')
-                    ->withSentence('Made with ❤️ by @bugihermansyah  | v5.0.0 |')
+                    ->withSentence('Made with ☕ & 🚬 by @bugihermansyah  | v2026.2.0.2 |')
                     ->withLoadTime(),
             ])
             ->sidebarWidth('14rem')
