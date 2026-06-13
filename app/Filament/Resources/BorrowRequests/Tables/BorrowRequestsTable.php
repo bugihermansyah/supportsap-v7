@@ -79,71 +79,71 @@ class BorrowRequestsTable
             ])
             
             ->filters([
-                SelectFilter::make('requester_id')
-                    ->label('Requester')
-                    ->relationship('requester', 'name')
-                    ->searchable()
-                    ->preload(),
-                SelectFilter::make('location')
-                    ->label('Location')
-                    ->relationship('location', 'name')
-                    ->searchable()
-                    ->preload(),
-                SelectFilter::make('request_type')
-                    ->label('Request Type')
-                    ->options(
-                        collect(BorrowRequestType::cases())
-                            ->mapWithKeys(fn ($type) => [$type->value => $type->getLabel()])
-                    ),
-                SelectFilter::make('status')
-                    ->label('Status')
-                    ->options(
-                        collect(BorrowRequestStatus::cases())
-                            ->filter(fn ($status) => in_array($status, [
-                                BorrowRequestStatus::Submitted,
-                                BorrowRequestStatus::Approved,
-                                BorrowRequestStatus::Rejected,
-                                BorrowRequestStatus::WaitingReturn,
-                                BorrowRequestStatus::PartiallyReturned,
-                                BorrowRequestStatus::Returned,
-                                BorrowRequestStatus::Cancelled,
-                            ]))
-                            ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])
-                    ),
-                SelectFilter::make('log_status')
-                    ->label('Log Status')
-                    ->options(
-                        collect(BorrowRequestStatus::cases())
-                            ->filter(fn ($status) => in_array($status, [
-                                BorrowRequestStatus::DeliveryScheduled,
-                                BorrowRequestStatus::Delivered,
-                                BorrowRequestStatus::PickupScheduled,
-                                BorrowRequestStatus::PickedUp,
-                            ]))
-                            ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])
-                    ),
-                Filter::make('date_from')
-                    ->schema([
-                        DatePicker::make('created_from')
-                            ->label('Created From')
-                            ->default(now()->subMonth()),
-                    ])
-                    ->query(function ($query, $data) {
-                        if (isset($data['created_from'])) {
-                            $query->whereDate('created_at', '>=', $data['created_from']);
-                        }
-                    }),
-                Filter::make('date_to')
-                    ->schema([
-                        DatePicker::make('created_to')
-                            ->label('Created To')
-                            ->default(now()),
-                    ])
-                    ->query(function ($query, $data) {
-                        if (isset($data['created_to'])) {
-                            $query->whereDate('created_at', '<=', $data['created_to']);
-                        }
-                    }),
+                // SelectFilter::make('requester_id')
+                //     ->label('Requester')
+                //     ->relationship('requester', 'name')
+                //     ->searchable()
+                //     ->preload(),
+                // SelectFilter::make('location')
+                //     ->label('Location')
+                //     ->relationship('location', 'name')
+                //     ->searchable()
+                //     ->preload(),
+                // SelectFilter::make('request_type')
+                //     ->label('Request Type')
+                //     ->options(
+                //         collect(BorrowRequestType::cases())
+                //             ->mapWithKeys(fn ($type) => [$type->value => $type->getLabel()])
+                //     ),
+                // SelectFilter::make('status')
+                //     ->label('Status')
+                //     ->options(
+                //         collect(BorrowRequestStatus::cases())
+                //             ->filter(fn ($status) => in_array($status, [
+                //                 BorrowRequestStatus::Submitted,
+                //                 BorrowRequestStatus::Approved,
+                //                 BorrowRequestStatus::Rejected,
+                //                 BorrowRequestStatus::WaitingReturn,
+                //                 BorrowRequestStatus::PartiallyReturned,
+                //                 BorrowRequestStatus::Returned,
+                //                 BorrowRequestStatus::Cancelled,
+                //             ]))
+                //             ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])
+                //     ),
+                // SelectFilter::make('log_status')
+                //     ->label('Log Status')
+                //     ->options(
+                //         collect(BorrowRequestStatus::cases())
+                //             ->filter(fn ($status) => in_array($status, [
+                //                 BorrowRequestStatus::DeliveryScheduled,
+                //                 BorrowRequestStatus::Delivered,
+                //                 BorrowRequestStatus::PickupScheduled,
+                //                 BorrowRequestStatus::PickedUp,
+                //             ]))
+                //             ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])
+                //     ),
+                // Filter::make('date_from')
+                //     ->schema([
+                //         DatePicker::make('created_from')
+                //             ->label('Created From')
+                //             ->default(now()->subMonth()),
+                //     ])
+                //     ->query(function ($query, $data) {
+                //         if (isset($data['created_from'])) {
+                //             $query->whereDate('created_at', '>=', $data['created_from']);
+                //         }
+                //     }),
+                // Filter::make('date_to')
+                //     ->schema([
+                //         DatePicker::make('created_to')
+                //             ->label('Created To')
+                //             ->default(now()),
+                //     ])
+                //     ->query(function ($query, $data) {
+                //         if (isset($data['created_to'])) {
+                //             $query->whereDate('created_at', '<=', $data['created_to']);
+                //         }
+                //     }),
             ], layout: FiltersLayout::AboveContent)
             ->defaultSort(fn (\Illuminate\Database\Eloquent\Builder $query) => $query->orderByRaw("CASE WHEN status IN ('submitted', 'waiting_return') THEN 0 ELSE 1 END")->orderBy('created_at', 'desc'))
             ->persistFiltersInSession()

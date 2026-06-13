@@ -17,9 +17,15 @@ class UnitsTable
         return $table
             ->columns([
                 ImageColumn::make('image')
-                    ->imageGallery(),
+                    ->imageGallery()
+                    ->imageSize(30),
                 TextColumn::make('name')
                     ->searchable(),
+                TextColumn::make('parent.name')
+                    ->label('Parent Unit'),
+                TextColumn::make('discontinued_at')
+                    ->date('d/m/Y')
+                    ->label('Discontinued'),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
