@@ -43,14 +43,16 @@ class FetchEmailUpdates extends Command
                 // Remove HTML tags if any, to make matching easier
                 $plainBody = strip_tags($body);
 
-                // Try to find the RP Number (e.g. RP-2605-000620)
-                $rpNo = null;
-                if (preg_match('/RP-\d{4}-\d{6}/i', $plainBody, $matches)) {
-                    $rpNo = strtoupper($matches[0]);
+                // Try to find the REQKRM or REQAMB Number
+                $reqNo = null;
+                $reqType = null;
+                if (preg_match('/(REQKRM|REQAMB)\/\d{4}\/\d+/i', $subject . ' ' . $plainBody, $matches)) {
+                    $reqNo = strtoupper($matches[0]);
+                    $reqType = strtoupper($matches[1]);
                 }
 
-                if (!$rpNo) {
-                    $this->warn('No RP Number found in email subject: ' . $subject);
+                if (!$reqNo) {
+                    $this->warn('No REQKRM or REQAMB Number found in email: ' . $subject);
                     $message->setFlag(['Seen']);
                     continue;
                 }
@@ -74,16 +76,21 @@ class FetchEmailUpdates extends Command
                 }
 
                 if (!$newStatus) {
-                    $this->warn('No matching status found for RP: ' . $rpNo);
+                    $this->warn('No matching status found for Request: ' . $reqNo);
                     $message->setFlag(['Seen']);
                     continue;
                 }
 
                 // Find Borrow Request
-                $borrowRequest = BorrowRequest::where('rp_no', $rpNo)->first();
+                $borrowRequest = null;
+                if ($reqType === 'REQKRM') {
+                    $borrowRequest = BorrowRequest::where('send_no', $reqNo)->first();
+                } elseif ($reqType === 'REQAMB') {
+                    $borrowRequest = BorrowRequest::where('take_no', $reqNo)->first();
+                }
 
                 if (!$borrowRequest) {
-                    $this->warn('Borrow Request not found for RP: ' . $rpNo);
+                    $this->warn("Borrow Request not found for $reqType: " . $reqNo);
                     $message->setFlag(['Seen']);
                     continue;
                 }
@@ -133,8 +140,9 @@ class FetchEmailUpdates extends Command
                 // Create Log
                 $log = new BorrowRequestLog();
                 $log->borrow_request_id = $borrowRequest->id;
-                $log->action_by = 999;
+                $log->action_by = 'system';
                 $log->action = $actionName;
+                $log->date = $logAt;
                 $log->note = $noteContent;
                 $log->details = $borrowRequest->units->map(function ($unit) {
                     return [
@@ -147,7 +155,7 @@ class FetchEmailUpdates extends Command
                 $log->updated_at = $emailDate;
                 $log->save();
 
-                $this->info("Successfully updated {$rpNo} to {$newStatus}");
+                $this->info("Successfully updated {$reqNo} to {$newStatus}");
                 
                 // Mark as read
                 $message->setFlag(['Seen']);
