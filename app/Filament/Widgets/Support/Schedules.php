@@ -106,6 +106,6 @@ class Schedules extends TableWidget
         }
 
         // Di dashboard utama, sembunyikan untuk head_support
-        return !auth()->user()?->hasRole('head_support');
+        return !auth()->user()?->hasRole(['head_support','admin']);
     }
 }
