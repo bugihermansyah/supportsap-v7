@@ -8,34 +8,34 @@ use Filament\Support\Contracts\HasLabel;
 
 enum LocationStatus: string implements HasColor, HasLabel, HasIcon
 {
-    case IMPLEMENTATION = 'implementation';
-    case ACTIVE = 'active';
-    case NON_ACTIVE = 'non_active';
+    case Implementation = 'implementation';
+    case Active = 'active';
+    case InActive = 'inactive';
 
     public function getLabel(): string
     {
         return match ($this) {
-            self::IMPLEMENTATION => 'Implementation',
-            self::ACTIVE => 'Active',
-            self::NON_ACTIVE => 'Non Active',
+            self::Implementation => 'Implementation',
+            self::Active => 'Active',
+            self::InActive => 'InActive',
         };
     }
 
     public function getColor(): string | array | null
     {
         return match ($this) {
-            self::IMPLEMENTATION => 'warning',
-            self::ACTIVE => 'success',
-            self::NON_ACTIVE => 'danger',
+            self::Implementation => 'warning',
+            self::Active => 'success',
+            self::InActive => 'danger',
         };
     }
 
     public function getIcon(): string
     {
         return match ($this) {
-            self::IMPLEMENTATION => 'heroicon-o-sparkles',
-            self::ACTIVE => 'heroicon-o-check',
-            self::NON_ACTIVE => 'heroicon-o-x-mark',
+            self::Implementation => 'heroicon-o-sparkles',
+            self::Active => 'heroicon-o-check',
+            self::InActive => 'heroicon-o-x-mark',
         };
     }
 }
