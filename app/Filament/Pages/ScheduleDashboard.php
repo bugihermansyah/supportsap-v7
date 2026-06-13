@@ -22,4 +22,9 @@ class ScheduleDashboard extends BaseDashboard
             Schedules::class,
         ];
     }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole('head_support') ?? false;
+    }
 }
