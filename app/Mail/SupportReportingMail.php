@@ -19,6 +19,7 @@ class SupportReportingMail extends Mailable
      */
     public function __construct(
         public Reporting $reporting,
+        public bool $isInternal = true,
     ) {}
 
     /**
@@ -31,8 +32,10 @@ class SupportReportingMail extends Mailable
         $title = $this->reporting->outstanding?->title ?? '-';
         $status = $this->reporting->status?->getLabel() ?? '-';
 
+        $prefix = $this->isInternal ? '[Internal]' : '[Support SAP]';
+
         return new Envelope(
-            subject: "[Internal] {$company} - {$location} : {$status} {$title}",
+            subject: "{$prefix} {$company} - {$location} : {$status} {$title}",
         );
     }
 

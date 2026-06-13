@@ -8,6 +8,7 @@ use App\Models\Outstanding;
 use App\Models\Reporting;
 use App\Models\User;
 use Carbon\Carbon;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -109,6 +110,15 @@ class CreateOutstanding extends CreateRecord
                             )->onQueue('scheduleEmails');
                         }
                     }
+
+                    $assignedUsers = User::whereIn('id', $data['user_id'])->get();
+                    foreach ($assignedUsers as $assignedUser) {
+                        Notification::make()
+                            ->title('New schedule')
+                            ->body("New schedule at {$locationName} for problem: {$title} on {$dateVisit}")
+                            ->info()
+                            ->sendToDatabase($assignedUser);
+                    }
                 }
             }
         } else {
@@ -167,6 +177,15 @@ class CreateOutstanding extends CreateRecord
                                 $reporterName
                             )->onQueue('scheduleEmails');
                         }
+                    }
+
+                    $assignedUsers = User::whereIn('id', $data['user_id'])->get();
+                    foreach ($assignedUsers as $assignedUser) {
+                        Notification::make()
+                            ->title('New schedule')
+                            ->body("New schedule at {$locationName} for problem: {$title} on {$dateVisit}")
+                            ->info()
+                            ->sendToDatabase($assignedUser);
                     }
                 }
             }

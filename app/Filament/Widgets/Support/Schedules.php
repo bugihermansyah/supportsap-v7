@@ -98,14 +98,5 @@ class Schedules extends TableWidget
             ->toolbarActions([]);
     }
 
-    public static function canView(): bool
-    {
-        // Selalu tampilkan di ScheduleDashboard
-        if (request()->routeIs('filament.admin.pages.schedule-dashboard')) {
-            return true;
-        }
 
-        // Di dashboard utama, sembunyikan untuk head_support
-        return !auth()->user()?->hasRole(['head_support','admin']);
-    }
 }

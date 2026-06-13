@@ -45,6 +45,12 @@ class SupportReportingsTable
                     ->wrap()
                     ->lineClamp(2)
                     ->html(),
+                TextColumn::make('note')
+                    ->label('Note')
+                    ->searchable()
+                    ->wrap()
+                    ->lineClamp(2)
+                    ->html(),
                 TextColumn::make('status'),
             ])
             ->defaultSort('date_visit', 'desc')
@@ -56,6 +62,7 @@ class SupportReportingsTable
                     ->label('Send Mail')
                     ->icon('heroicon-o-envelope')
                     ->color('success')
+                    ->disabled(fn ($record) => empty($record->status))
                     ->url(fn ($record): string => SupportReportingResource::getUrl('send-email', ['record' => $record])),
                 EditAction::make(),
             ])

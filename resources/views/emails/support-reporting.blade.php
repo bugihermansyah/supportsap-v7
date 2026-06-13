@@ -8,9 +8,11 @@
     margin: 0;
     padding: 1px 0;
     line-height: 1.5;
+    font-size: 14px;
 }
 .content-html p {
     margin: 2px 0;
+    font-size: 14px;
 }
 </style>
 
@@ -33,7 +35,7 @@
 </tr>
 <tr>
 <td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Reporter:</td>
-<td style="padding: 2px 0;">{{ $outstanding?->reporter_name ?? '-' }}</td>
+<td style="padding: 2px 0;">Bpk/Ibu {{ $outstanding?->reporter_name ?? '-' }}</td>
 </tr>
 </table>
 

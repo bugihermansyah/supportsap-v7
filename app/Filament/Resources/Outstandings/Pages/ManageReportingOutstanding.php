@@ -90,6 +90,9 @@ class ManageReportingOutstanding extends ManageRelatedRecords
                 TextColumn::make('action')
                     ->label('Action')
                     ->html(),
+                TextColumn::make('note')
+                    ->label('Note')
+                    ->html(),
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge(),
@@ -98,7 +101,7 @@ class ManageReportingOutstanding extends ManageRelatedRecords
                 //
             ])
             ->headerActions([
-                CreateAction::make(),
+                // CreateAction::make(),
             ])
             ->recordActions([
                 EditAction::make()

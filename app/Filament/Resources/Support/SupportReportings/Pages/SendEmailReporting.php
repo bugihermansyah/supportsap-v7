@@ -39,20 +39,9 @@ class SendEmailReporting extends Page implements HasForms
         $this->record = $this->resolveRecord($record);
         $this->record->load(['outstanding.location.team', 'outstanding.location.company', 'users']);
 
-        // Resolve team-based email recipients
-        $teamName = $this->record->outstanding?->location?->team?->name;
-        $teamKey = $this->resolveTeamKey($teamName);
-
-        $emailTo = [];
-        $emailCc = [];
-
-        if ($teamKey) {
-            $toEmail = DbConfig::get("mail.{$teamKey['to']}");
-            $ccEmail = DbConfig::get("mail.{$teamKey['cc']}");
-
-            $emailTo = $toEmail ? (is_array($toEmail) ? $toEmail : explode(',', str_replace(' ', '', $toEmail))) : [];
-            $emailCc = $ccEmail ? (is_array($ccEmail) ? $ccEmail : explode(',', str_replace(' ', '', $ccEmail))) : [];
-        }
+        // Use the email values previously saved in this reporting for client emails
+        $emailTo = $this->record->email_to ?? [];
+        $emailCc = $this->record->email_cc ?? [];
 
         $this->form->fill([
             'cause' => $this->record->cause,
@@ -146,19 +135,21 @@ class SendEmailReporting extends Page implements HasForms
                                 SpatieMediaLibraryFileUpload::make('attachments')
                                     ->hiddenLabel()
                                     ->image()
+                                    ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png'])
                                     ->multiple()
-                                    ->resize(30)
-                                    ->optimize('jpg')
+                                    ->maxSize(10240)
+                                    ->optimize('jpg', 75)
+                                    ->resize(75)
                                     ->imageEditor()
                                     ->panelLayout('grid')
                                     ->openable()
                                     ->collection('attachments')
                                     ->downloadable()
-                                    ->maxImageWidth(1920)
-                                    ->maxImageHeight(1080)
-                                    ->maxSize(3072)
+                                    ->maxImageWidth(1360)
+                                    // ->maxImageHeight(1080)
                                     ->maxFiles(10)
-                                    ->preserveFilenames(),
+                                    ->preserveFilenames()
+                                    ->columnSpanFull(),
                         ])
                         ->columnSpan(1),
             ])
@@ -202,7 +193,7 @@ class SendEmailReporting extends Page implements HasForms
             $mail->cc($emailCc);
         }
 
-        $mail->queue(new SupportReportingMail($reporting));
+        $mail->queue(new SupportReportingMail($reporting, false));
 
         Notification::make()
             ->title('Email berhasil dikirim!')
@@ -212,19 +203,4 @@ class SendEmailReporting extends Page implements HasForms
         $this->redirect(SupportReportingResource::getUrl('view', ['record' => $reporting]));
     }
 
-    protected function resolveTeamKey(?string $teamName): ?array
-    {
-        if (! $teamName) {
-            return null;
-        }
-
-        return match (strtolower($teamName)) {
-            'barat' => ['to' => 'to_barat', 'cc' => 'cc_barat'],
-            'timur' => ['to' => 'to_timur', 'cc' => 'cc_timur'],
-            'pusat' => ['to' => 'to_pusat', 'cc' => 'cc_pusat'],
-            'cass barat' => ['to' => 'to_cass_barat', 'cc' => 'cc_cass_barat'],
-            'luar kota' => ['to' => 'to_luar_kota', 'cc' => 'cc_luar_kota'],
-            default => null,
-        };
-    }
 }

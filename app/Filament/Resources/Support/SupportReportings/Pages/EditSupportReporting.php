@@ -69,16 +69,10 @@ class EditSupportReporting extends EditRecord
             return;
         }
 
-        // Map team name to db_config key
-        $teamKey = $this->resolveTeamKey($teamName);
-
-        if (!$teamKey) {
-            return;
-        }
-
-        // Get TO and CC from db_config
-        $toEmail = DbConfig::get("mail.{$teamKey['to']}");
-        $ccEmail = DbConfig::get("mail.{$teamKey['cc']}");
+        // Get TO and CC from Team table
+        $team = $reporting->outstanding?->location?->team;
+        $toEmail = $team?->email_to;
+        $ccEmail = $team?->email_cc;
 
         if (empty($toEmail)) {
             return;
@@ -93,20 +87,7 @@ class EditSupportReporting extends EditRecord
         $mail->queue(new SupportReportingMail($reporting));
     }
 
-    /**
-     * Resolve team name to the corresponding db_config keys for TO and CC.
-     */
-    protected function resolveTeamKey(string $teamName): ?array
-    {
-        return match (strtolower($teamName)) {
-            'barat'      => ['to' => 'to_barat', 'cc' => 'cc_barat'],
-            'timur'      => ['to' => 'to_timur', 'cc' => 'cc_timur'],
-            'pusat'      => ['to' => 'to_pusat', 'cc' => 'cc_pusat'],
-            'cass barat' => ['to' => 'to_cass_barat', 'cc' => 'cc_cass_barat'],
-            'luar kota'  => ['to' => 'to_luar_kota', 'cc' => 'cc_luar_kota'],
-            default      => null,
-        };
-    }
+
 
     protected function getSaveFormAction(): Action
     {
@@ -116,7 +97,14 @@ class EditSupportReporting extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        return '/';
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        
+        if ($user && $user->hasRole('support') && !$user->hasRole(['head_support'])) {
+            return '/';
+        }
+
+        return '/schedule-dashboard';
     }
 
     protected function getHeaderActions(): array

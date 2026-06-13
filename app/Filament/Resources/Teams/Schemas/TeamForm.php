@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Teams\Schemas;
 
+use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
@@ -12,8 +14,21 @@ class TeamForm
         return $schema
             ->components([
                 TextInput::make('name')
+                    ->dehydrated(false)
                     ->required(),
-                TextInput::make('color'),
+                ColorPicker::make('color'),
+                TagsInput::make('email_to')
+                    ->label('Email To')
+                    ->placeholder('Tambahkan email utama')
+                    ->nestedRecursiveRules([
+                        'email',
+                    ]),
+                TagsInput::make('email_cc')
+                    ->label('Email CC')
+                    ->placeholder('Tambahkan email CC')
+                    ->nestedRecursiveRules([
+                        'email',
+                    ]),
             ]);
     }
 }
