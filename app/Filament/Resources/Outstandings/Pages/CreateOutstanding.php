@@ -8,6 +8,7 @@ use App\Models\Outstanding;
 use App\Models\Reporting;
 use App\Models\User;
 use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -117,6 +118,13 @@ class CreateOutstanding extends CreateRecord
                             ->title('New schedule')
                             ->body("New schedule at {$locationName} for problem: {$title} on {$dateVisit}")
                             ->info()
+                            ->actions([
+                                Action::make('view')
+                                    ->label('View Schedule')
+                                    ->url('/')
+                                    ->markAsRead()
+                                    ->button(),
+                            ])
                             ->sendToDatabase($assignedUser);
                     }
                 }
@@ -185,6 +193,13 @@ class CreateOutstanding extends CreateRecord
                             ->title('New schedule')
                             ->body("New schedule at {$locationName} for problem: {$title} on {$dateVisit}")
                             ->info()
+                            ->actions([
+                                Action::make('view')
+                                    ->label('View Schedule')
+                                    ->url('/')
+                                    ->markAsRead()
+                                    ->button(),
+                            ])
                             ->sendToDatabase($assignedUser);
                     }
                 }
