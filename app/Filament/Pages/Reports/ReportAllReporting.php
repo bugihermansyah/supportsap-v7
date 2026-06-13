@@ -36,7 +36,7 @@ class ReportAllReporting extends Page implements HasTable
 
     protected static ?string $navigationLabel = 'All Reporting Detail';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Report';
+    protected static string|\UnitEnum|null $navigationGroup = 'Support Reports';
 
     protected static ?int $navigationSort = 16;
 

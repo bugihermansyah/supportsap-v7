@@ -21,7 +21,7 @@ class ReportCountOutstandingUnit extends Page implements HasTable
 
     protected static ?string $navigationLabel = 'Outstanding by Unit';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Report';
+    protected static string|\UnitEnum|null $navigationGroup = 'Support Reports';
 
     protected static ?int $navigationSort = 12;
 

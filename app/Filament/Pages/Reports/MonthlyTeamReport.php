@@ -14,7 +14,7 @@ class MonthlyTeamReport extends Page
 
     protected static ?string $navigationLabel = 'Monthly Team Report';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Report';
+    protected static string|\UnitEnum|null $navigationGroup = 'Support Reports';
 
     protected static ?int $navigationSort = 10;
 

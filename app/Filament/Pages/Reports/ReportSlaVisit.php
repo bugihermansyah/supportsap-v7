@@ -22,7 +22,7 @@ class ReportSlaVisit extends Page implements HasTable
 
     protected static ?string $navigationLabel = 'SLA Visit';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Report';
+    protected static string|\UnitEnum|null $navigationGroup = 'Support Reports';
 
     protected static ?int $navigationSort = 14;
 
