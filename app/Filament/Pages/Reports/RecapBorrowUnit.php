@@ -15,6 +15,7 @@ class RecapBorrowUnit extends Page implements HasTable
     use InteractsWithTable;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-magnifying-glass';
+
     protected static string|\UnitEnum|null $navigationGroup = 'Borrow Reports';
 
     protected string $view = 'filament.pages.rekap-peminjaman';
@@ -22,6 +23,13 @@ class RecapBorrowUnit extends Page implements HasTable
     protected static ?string $navigationLabel = 'Recap Borrow Unit';
 
     protected ?string $heading = 'Recap Borrow Unit';
+
+    public static function canAccess(): bool
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        return $user->hasRole(['super_admin', 'admin']);
+    }
 
     public function table(Table $table): Table
     {
