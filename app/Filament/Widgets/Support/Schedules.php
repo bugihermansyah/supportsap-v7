@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Schedules extends TableWidget
 {
+    protected static bool $isDiscovered = false;
+
     protected static ?string $heading = 'Schedules';
 
     protected static ?int $sort = 1;
@@ -96,21 +98,5 @@ class Schedules extends TableWidget
                     }),
             ])
             ->toolbarActions([]);
-    }
-
-    public static function canView(): bool
-    {
-        // Bypass pengecekan saat Livewire melakukan update (menghindari error 403 saat klik Start)
-        if (request()->routeIs('livewire.update')) {
-            return true;
-        }
-
-        // Selalu tampilkan jika sedang berada di halaman ScheduleDashboard
-        if (request()->routeIs('filament.admin.pages.schedule-dashboard')) {
-            return true;
-        }
-
-        // Di dashboard utama (atau halaman lain), sembunyikan untuk role tertentu
-        return !auth()->user()?->hasRole(['head_support', 'admin']);
     }
 }
