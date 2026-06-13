@@ -98,5 +98,19 @@ class Schedules extends TableWidget
             ->toolbarActions([]);
     }
 
+    public static function canView(): bool
+    {
+        // Bypass pengecekan saat Livewire melakukan update (menghindari error 403 saat klik Start)
+        if (request()->routeIs('livewire.update')) {
+            return true;
+        }
 
+        // Selalu tampilkan jika sedang berada di halaman ScheduleDashboard
+        if (request()->routeIs('filament.admin.pages.schedule-dashboard')) {
+            return true;
+        }
+
+        // Di dashboard utama (atau halaman lain), sembunyikan untuk role tertentu
+        return !auth()->user()?->hasRole(['head_support', 'admin']);
+    }
 }
