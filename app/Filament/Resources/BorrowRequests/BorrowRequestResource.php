@@ -22,6 +22,21 @@ class BorrowRequestResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'rp_no';
 
+    public static function getRecordTitle(?\Illuminate\Database\Eloquent\Model $record): string|\Illuminate\Contracts\Support\Htmlable|null
+    {
+        if (! $record) {
+            return null;
+        }
+
+        $type = $record->request_type instanceof \App\Enums\BorrowRequestType 
+            ? $record->request_type->getLabel() 
+            : $record->request_type;
+
+        $locationName = $record->location?->full_name ?? $record->location?->name ?? 'Unknown Location';
+
+        return "{$type} - {$locationName}";
+    }
+
     public static function form(Schema $schema): Schema
     {
         return BorrowRequestForm::configure($schema);

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Widgets\Reports;
+namespace App\Filament\Widgets\Admin;
 
 use App\Models\BorrowRequest;
 use Filament\Widgets\ChartWidget;
@@ -15,7 +15,7 @@ class BorrowRequestChartWidget extends ChartWidget
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        return $user->hasRole(['super_admin', 'admin']);
+        return $user->hasRole(['super_admin']);
     }
 
     protected function getData(): array

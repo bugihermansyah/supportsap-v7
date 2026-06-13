@@ -17,7 +17,7 @@ class OverdueBorrowRequestReport extends Page implements HasTable
     use InteractsWithTable;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-exclamation-triangle';
-    protected static string|\UnitEnum|null $navigationGroup = 'Borrow Request Reports';
+    protected static string|\UnitEnum|null $navigationGroup = 'Borrow Reports';
     protected static ?string $title = 'Overdue Borrow Requests';
     protected string $view = "filament.pages.reports.overdue-borrow-request-report";
     protected static ?int $navigationSort = 3;

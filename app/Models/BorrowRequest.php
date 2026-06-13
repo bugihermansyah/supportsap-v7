@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\BorrowRequestStatus;
+use App\Enums\BorrowRequestType;
 use App\Enums\LogStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,8 @@ class BorrowRequest extends Model
         return [
             'status' => BorrowRequestStatus::class,
             'log_status' => BorrowRequestStatus::class,
+            'request_type' => BorrowRequestType::class,
+            
         ];
     }
 

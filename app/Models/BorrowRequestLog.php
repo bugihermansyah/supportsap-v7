@@ -12,6 +12,7 @@ class BorrowRequestLog extends Model
     {
         return [
             'action' => BorrowRequestStatus::class,
+            'is_claim' => 'boolean',
         ];
     }
 

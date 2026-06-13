@@ -3,9 +3,7 @@
 namespace App\Filament\Resources\BorrowRequests\Tables;
 
 use App\Enums\BorrowRequestStatus;
-use App\Enums\LogStatus;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use App\Enums\BorrowRequestType;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
@@ -19,27 +17,53 @@ class BorrowRequestsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (\Illuminate\Database\Eloquent\Builder $query) {
+                $user = auth()->user();
+                if ($user) {
+                    if ($user->hasRole('support') && !$user->hasRole('head_support')) {
+                        $query->where('requester_id', $user->id);
+                    } elseif ($user->hasRole('head_support')) {
+                        $query->where(function ($q) use ($user) {
+                            $q->whereHas('location', function ($locQ) use ($user) {
+                                $locQ->where('team_id', $user->team_id);
+                            })->orWhere(function ($q2) use ($user) {
+                                $q2->whereHas('location', function ($locQ) {
+                                    $locQ->where('area_status', 'out');
+                                })->whereHas('requester', function ($reqQ) use ($user) {
+                                    $reqQ->where('team_id', $user->team_id);
+                                });
+                            });
+                        });
+                    }
+                }
+            })
             ->columns([
                 TextColumn::make('created_at')
                     ->label('Requested Date')
                     ->searchable()
-                    ->dateTime('d M Y H:i:s')
+                    ->dateTime('d M Y')
                     ->sortable(),
                 TextColumn::make('rp_no')
                     ->searchable(),
                 TextColumn::make('requester.name')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('location.name')
+                TextColumn::make('location.full_name')
+                    ->limit(22)
+                    ->tooltip(fn ($record) => $record->location?->full_name)
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('warehouse.name')
+                TextColumn::make('request_type')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('status')
                     ->badge()
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('send_no')
+                    ->label('ReqKRM'),
+                TextColumn::make('take_no')
+                    ->label('ReqAMB'),
                 TextColumn::make('log_status')
                     ->badge()
                     ->searchable()
@@ -65,11 +89,12 @@ class BorrowRequestsTable
                     ->relationship('location', 'name')
                     ->searchable()
                     ->preload(),
-                // SelectFilter::make('warehouse')
-                //     ->label('Warehouse')
-                //     ->relationship('warehouse', 'name')
-                //     ->searchable()
-                //     ->preload(),
+                SelectFilter::make('request_type')
+                    ->label('Request Type')
+                    ->options(
+                        collect(BorrowRequestType::cases())
+                            ->mapWithKeys(fn ($type) => [$type->value => $type->getLabel()])
+                    ),
                 SelectFilter::make('status')
                     ->label('Status')
                     ->options(
@@ -81,6 +106,7 @@ class BorrowRequestsTable
                                 BorrowRequestStatus::WaitingReturn,
                                 BorrowRequestStatus::PartiallyReturned,
                                 BorrowRequestStatus::Returned,
+                                BorrowRequestStatus::Cancelled,
                             ]))
                             ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])
                     ),
@@ -119,9 +145,9 @@ class BorrowRequestsTable
                         }
                     }),
             ], layout: FiltersLayout::AboveContent)
-            ->defaultSort('created_at', 'desc')
+            ->defaultSort(fn (\Illuminate\Database\Eloquent\Builder $query) => $query->orderByRaw("CASE WHEN status IN ('submitted', 'waiting_return') THEN 0 ELSE 1 END")->orderBy('created_at', 'desc'))
             ->persistFiltersInSession()
-            ->filtersFormColumns(6)
+            ->filtersFormColumns(7)
             ->recordActions([
                 EditAction::make(),
             ])

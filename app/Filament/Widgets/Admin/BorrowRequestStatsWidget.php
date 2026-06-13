@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Widgets\Reports;
+namespace App\Filament\Widgets\Admin;
 
 use App\Models\BorrowRequest;
 use App\Enums\BorrowRequestStatus;
@@ -28,11 +28,11 @@ class BorrowRequestStatsWidget extends BaseWidget
         ])->count();
 
         return [
-            Stat::make('Total Borrow Requests', $totalRequests)
+            Stat::make('Total Requests', $totalRequests)
                 ->description('All time requests')
                 ->descriptionIcon('heroicon-m-document-text')
                 ->color('primary'),
-            Stat::make('Submitted Requests', $approvedRequests)
+            Stat::make('New Requests', $approvedRequests)
                 ->description('Requests need approval')
                 ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success'),
