@@ -84,44 +84,44 @@ class BorrowRequestsTable
                     ->relationship('requester', 'name')
                     ->searchable()
                     ->preload(),
-                // SelectFilter::make('location')
-                //     ->label('Location')
-                //     ->relationship('location', 'name')
-                //     ->searchable()
-                //     ->preload(),
-                // SelectFilter::make('request_type')
-                //     ->label('Request Type')
-                //     ->options(
-                //         collect(BorrowRequestType::cases())
-                //             ->mapWithKeys(fn ($type) => [$type->value => $type->getLabel()])
-                //     ),
-                // SelectFilter::make('status')
-                //     ->label('Status')
-                //     ->options(
-                //         collect(BorrowRequestStatus::cases())
-                //             ->filter(fn ($status) => in_array($status, [
-                //                 BorrowRequestStatus::Submitted,
-                //                 BorrowRequestStatus::Approved,
-                //                 BorrowRequestStatus::Rejected,
-                //                 BorrowRequestStatus::WaitingReturn,
-                //                 BorrowRequestStatus::PartiallyReturned,
-                //                 BorrowRequestStatus::Returned,
-                //                 BorrowRequestStatus::Cancelled,
-                //             ]))
-                //             ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])
-                //     ),
-                // SelectFilter::make('log_status')
-                //     ->label('Log Status')
-                //     ->options(
-                //         collect(BorrowRequestStatus::cases())
-                //             ->filter(fn ($status) => in_array($status, [
-                //                 BorrowRequestStatus::DeliveryScheduled,
-                //                 BorrowRequestStatus::Delivered,
-                //                 BorrowRequestStatus::PickupScheduled,
-                //                 BorrowRequestStatus::PickedUp,
-                //             ]))
-                //             ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])
-                //     ),
+                SelectFilter::make('location')
+                    ->label('Location')
+                    ->relationship('location', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('request_type')
+                    ->label('Request Type')
+                    ->options(
+                        collect(BorrowRequestType::cases())
+                            ->mapWithKeys(fn ($type) => [$type->value => $type->getLabel()])
+                    ),
+                SelectFilter::make('status')
+                    ->label('Status')
+                    ->options(
+                        collect(BorrowRequestStatus::cases())
+                            ->filter(fn ($status) => in_array($status, [
+                                BorrowRequestStatus::Submitted,
+                                BorrowRequestStatus::Approved,
+                                BorrowRequestStatus::Rejected,
+                                BorrowRequestStatus::WaitingReturn,
+                                BorrowRequestStatus::PartiallyReturned,
+                                BorrowRequestStatus::Returned,
+                                BorrowRequestStatus::Cancelled,
+                            ]))
+                            ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])
+                    ),
+                SelectFilter::make('log_status')
+                    ->label('Log Status')
+                    ->options(
+                        collect(BorrowRequestStatus::cases())
+                            ->filter(fn ($status) => in_array($status, [
+                                BorrowRequestStatus::DeliveryScheduled,
+                                BorrowRequestStatus::Delivered,
+                                BorrowRequestStatus::PickupScheduled,
+                                BorrowRequestStatus::PickedUp,
+                            ]))
+                            ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])
+                    ),
                 Filter::make('date_from')
                     ->schema([
                         DatePicker::make('created_from')
