@@ -24,7 +24,7 @@ class UsersTable
                 }
 
                 // Filter berdasarkan team jika bukan role tertentu
-                if ($user && !$user->hasRole('super_admin', 'manager_support', 'helpdesk') && $user->team_id) {
+                if ($user && !$user->hasAnyRole(['super_admin', 'manager_support', 'helpdesk']) && $user->team_id) {
                     $query->where('team_id', $user->team_id);
                 }
             })
@@ -53,7 +53,8 @@ class UsersTable
                 //
             ])
             ->recordActions([
-                Impersonate::make(),
+                Impersonate::make()
+                    ->visible(fn () => auth()->user()?->hasRole('super_admin')),
                 EditAction::make(),
             ])
             ->toolbarActions([]);
