@@ -15,6 +15,7 @@ class EditOutstanding extends EditRecord
     {
         return [
             // ViewAction::make(),
+            DeleteAction::make(),
         ];
     }
 }
