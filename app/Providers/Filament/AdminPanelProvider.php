@@ -48,7 +48,10 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Taupe,
             ])
+            ->brandLogo(asset('images/sites/logo-sap.png'))
+            ->brandLogoHeight('3rem')
             ->brandName(DbConfig::get("general.brand_name"))
+            ->favicon(asset('images/sites/favicon.ico'))
             ->databaseNotifications()
             ->databaseNotificationsPolling('20s')
             ->sidebarCollapsibleOnDesktop()
