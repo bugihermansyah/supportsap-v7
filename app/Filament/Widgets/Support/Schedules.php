@@ -111,7 +111,7 @@ class Schedules extends TableWidget
         }
 
         // 3. Sembunyikan widget ini untuk head_support di tempat lain (seperti Dashboard utama)
-        if (auth()->user()?->hasRole('head_support')) {
+        if (auth()->user()?->hasAnyRole(['head_support', 'head_preventive', 'admin', 'helpdesk', 'manager', 'owner', 'preventive'])) {
             return false;
         }
 
