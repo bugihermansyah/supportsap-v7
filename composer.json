@@ -15,6 +15,7 @@
         "php": "^8.3",
         "al-saloul/filament-image-gallery": "^3.0",
         "awcodes/filament-quick-create": "^5.0",
+        "bezhansalleh/filament-exceptions": "^4.2",
         "bezhansalleh/filament-shield": "^4.2",
         "businesstilto/commentable": "^0.3.7",
         "danihidayatx/image-optimizer": "^2.1",

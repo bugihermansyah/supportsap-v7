@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "503681c998e3dddeda65926286791eb6",
+    "content-hash": "141317c1727cefea7ede66ea61cafaa4",
     "packages": [
         {
             "name": "al-saloul/filament-image-gallery",
@@ -282,6 +282,94 @@
                 "source": "https://github.com/Bacon/BaconQrCode/tree/v3.1.1"
             },
             "time": "2026-04-05T21:06:35+00:00"
+        },
+        {
+            "name": "bezhansalleh/filament-exceptions",
+            "version": "4.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/bezhanSalleh/filament-exceptions.git",
+                "reference": "ebd8f46c70ef6c722d3bf5fba7f06c6bf4ed5cbd"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/bezhanSalleh/filament-exceptions/zipball/ebd8f46c70ef6c722d3bf5fba7f06c6bf4ed5cbd",
+                "reference": "ebd8f46c70ef6c722d3bf5fba7f06c6bf4ed5cbd",
+                "shasum": ""
+            },
+            "require": {
+                "bezhansalleh/filament-plugin-essentials": "^1.0",
+                "filament/filament": "^4.0|^5.0",
+                "illuminate/contracts": "^11.28|^12.0|^13.0",
+                "illuminate/support": "^11.28|^12.0|^13.0",
+                "php": "^8.2|^8.3",
+                "spatie/laravel-package-tools": "^1.9"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.0",
+                "laravel/pint": "^1.0",
+                "nunomaduro/collision": "^8.0",
+                "orchestra/testbench": "^9.0|^10.0|^11.0",
+                "pestphp/pest": "^3.8|^4.0",
+                "pestphp/pest-plugin-laravel": "^3.2|^4.0",
+                "pestphp/pest-plugin-livewire": "^3.0|^4.0",
+                "pestphp/pest-plugin-type-coverage": "^3.6|^4.0",
+                "phpstan/extension-installer": "^1.4",
+                "phpstan/phpstan": "^2.1",
+                "phpstan/phpstan-deprecation-rules": "^2.0",
+                "phpstan/phpstan-phpunit": "^2.0",
+                "phpunit/phpunit": "^11.0|^12.0",
+                "rector/jack": "^0.4.0",
+                "rector/rector": "^2.2",
+                "spatie/laravel-ray": "^1.43"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "FilamentExceptions": "BezhanSalleh\\FilamentExceptions\\Facades\\FilamentExceptions"
+                    },
+                    "providers": [
+                        "BezhanSalleh\\FilamentExceptions\\FilamentExceptionsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "BezhanSalleh\\FilamentExceptions\\": "src",
+                    "BezhanSalleh\\FilamentExceptions\\Database\\Factories\\": "database/factories"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Bezhan Salleh",
+                    "email": "bezhan_salleh@yahoo.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A Simple & Beautiful Pluggable Exception Viewer for FilamentPHP's Admin Panel",
+            "homepage": "https://github.com/bezhansalleh/filament-exceptions",
+            "keywords": [
+                "bezhanSalleh",
+                "filament-exception-viewer",
+                "filament-exceptions",
+                "laravel"
+            ],
+            "support": {
+                "issues": "https://github.com/bezhanSalleh/filament-exceptions/issues",
+                "source": "https://github.com/bezhanSalleh/filament-exceptions/tree/4.2.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/bezhanSalleh",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-03-29T04:11:31+00:00"
         },
         {
             "name": "bezhansalleh/filament-plugin-essentials",
