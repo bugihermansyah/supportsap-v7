@@ -51,6 +51,19 @@ class OutstandingResource extends Resource
         return OutstandingsTable::configure($table);
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        $user = auth()->user();
+
+        if ($user && $user->hasAnyRole(['head_support', 'support'])) {
+            $query->whereHas('location', fn ($q) => $q->where('team_id', $user->team_id));
+        }
+
+        return $query;
+    }
+
     public static function getRecordSubNavigation(Page $page): array
     {
         return $page->generateNavigationItems([

@@ -3,9 +3,9 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\ScheduleDashboard;
+use App\Filament\Resources\BorrowRequests\BorrowRequestResource;
 use App\Filament\Resources\Outstandings\OutstandingResource;
 use Awcodes\QuickCreate\QuickCreatePlugin;
-use BezhanSalleh\FilamentExceptions\FilamentExceptionsPlugin;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Devonab\FilamentEasyFooter\EasyFooterPlugin;
 use Filament\Http\Middleware\Authenticate;
@@ -125,12 +125,13 @@ class AdminPanelProvider extends PanelProvider
                 QuickCreatePlugin::make()
                     ->includes([
                         OutstandingResource::class,
+                        BorrowRequestResource::class,
                     ]),
                 EasyFooterPlugin::make()
                     ->withFooterPosition('footer')
                     ->withSentence('Made with ☕ & 🚬 by @bugihermansyah  | v2026.2.0.2 |')
                     ->withLoadTime(),
-                FilamentExceptionsPlugin::make(),
+                \BezhanSalleh\FilamentExceptions\FilamentExceptionsPlugin::make(),
             ])
             ->sidebarWidth('14rem')
             ->authMiddleware([

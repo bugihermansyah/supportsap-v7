@@ -58,6 +58,7 @@ class OutstandingsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('created_at', 'desc')
             ->striped()
             ->filters([
                 //
