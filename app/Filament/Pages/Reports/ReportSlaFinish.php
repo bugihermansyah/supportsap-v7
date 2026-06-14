@@ -167,6 +167,6 @@ class ReportSlaFinish extends Page implements HasTable
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasRole(['admin', 'head_support', 'helpdesk']) ?? false;
+        return auth()->user()?->hasAnyRole(['head_support', 'helpdesk', 'head_preventive', 'owner', 'preventive']) ?? false;
     }
 }

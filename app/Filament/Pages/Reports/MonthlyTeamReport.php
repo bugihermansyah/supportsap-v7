@@ -32,6 +32,6 @@ class MonthlyTeamReport extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasRole(['admin', 'head_support']);
+        return auth()->user()?->hasAnyRole(['helpdesk', 'head_support']);
     }
 }
