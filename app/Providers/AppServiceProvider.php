@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Policies\ActivityPolicy;
+use App\Policies\ExceptionPolicy;
+use BezhanSalleh\FilamentExceptions\Models\Exception;
 use BezhanSalleh\FilamentShield\Facades\FilamentShield;
 use Filament\Notifications\Livewire\Notifications;
 use Filament\Support\Enums\Alignment;
@@ -22,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
 {
     protected array $policies = [
         Activity::class => ActivityPolicy::class,
+        Exception::class => ExceptionPolicy::class,
     ];
 
     public function register(): void
