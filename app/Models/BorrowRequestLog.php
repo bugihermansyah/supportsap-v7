@@ -38,7 +38,10 @@ class BorrowRequestLog extends Model
                 // We also check for $log->status in case the column is actually named status.
                 $ignoredActions = ['delivery_scheduled', 'delivered', 'pickup_scheduled', 'picked_up'];
                 
-                if (!in_array($log->action, $ignoredActions)) {
+                $actionValue = $log->action instanceof \BackedEnum ? $log->action->value : $log->action;
+                $statusValue = $log->status instanceof \BackedEnum ? $log->status->value : $log->status;
+
+                if (!in_array($actionValue ?? $statusValue, $ignoredActions)) {
                     $log->borrowRequest->status = $log->action ?? $log->status;
                     $log->borrowRequest->save();
                 }
