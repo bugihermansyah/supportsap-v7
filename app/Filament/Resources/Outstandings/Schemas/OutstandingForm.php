@@ -120,7 +120,9 @@ class OutstandingForm
                                 ->searchable()
                                 ->required()
                                 ->options(function () {
-                                    $teams = Team::with('users')->get();
+                                    $teams = Team::with(['users' => function($query) {
+                                        $query->where('status', '!=', 0);
+                                    }])->get();
                                     $options = [];
 
                                     foreach ($teams as $team) {

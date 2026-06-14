@@ -81,12 +81,19 @@ class BorrowRequestsTable
             ->filters([
                 SelectFilter::make('requester_id')
                     ->label('Requester')
-                    ->relationship('requester', 'name')
+                    ->relationship('requester', 'name', fn (\Illuminate\Database\Eloquent\Builder $query) => $query->role(['head_support', 'support'])->where('status', 1))
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'super_admin'])),
                 SelectFilter::make('location')
                     ->label('Location')
-                    ->relationship('location', 'name')
+                    ->relationship('location', 'name', function (\Illuminate\Database\Eloquent\Builder $query) {
+                        $user = auth()->user();
+                        if (! $user?->hasAnyRole(['admin', 'super_admin'])) {
+                            $query->where('team_id', $user?->team_id);
+                        }
+                        return $query;
+                    })
                     ->searchable()
                     ->preload(),
                 SelectFilter::make('request_type')

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Outstandings\Pages;
 
 use App\Filament\Resources\Outstandings\OutstandingResource;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use BackedEnum;
 use Carbon\Carbon;
 use Filament\Actions\AssociateAction;
@@ -96,6 +97,15 @@ class ManageReportingOutstanding extends ManageRelatedRecords
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge(),
+                SpatieMediaLibraryImageColumn::make('attachments')
+                    ->allCollections()
+                    ->filterMediaUsing(fn ($media) => $media->filter(fn ($item) => in_array($item->collection_name, ['default', 'attachments'])))
+                    ->imageGallery()
+                    ->stacked()
+                    ->circular()
+                    ->limit(3)
+                    ->overlap(4)
+                    ->ring(3, '#ffffffff')
             ])
             ->filters([
                 //

@@ -13,10 +13,13 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class WarehouseResource extends Resource
 {
     protected static ?string $model = Warehouse::class;
+
+    protected static string | UnitEnum | null $navigationGroup = 'Main';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingStorefront;
 

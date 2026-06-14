@@ -36,10 +36,10 @@ class SupportReportingResource extends Resource
         return SupportReportingForm::configure($schema);
     }
 
-    public static function infolist(Schema $schema): Schema
-    {
-        return SupportReportingInfolist::configure($schema);
-    }
+    // public static function infolist(Schema $schema): Schema
+    // {
+    //     return SupportReportingInfolist::configure($schema);
+    // }
 
     public static function table(Table $table): Table
     {
@@ -58,7 +58,7 @@ class SupportReportingResource extends Resource
         return [
             'index' => ListSupportReportings::route('/'),
             'create' => CreateSupportReporting::route('/create'),
-            'view' => ViewSupportReporting::route('/{record}'),
+            // 'view' => ViewSupportReporting::route('/{record}'),
             'edit' => EditSupportReporting::route('/{record}/edit'),
             'send-email' => SendEmailReporting::route('/{record}/send-email'),
         ];

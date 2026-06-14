@@ -87,6 +87,9 @@ class SendEmailReporting extends Page implements HasForms
                         TextEntry::make('status')
                             ->label('Status')
                             ->badge(),
+                        TextEntry::make('send_mail_at')
+                            ->label('Send Mail At')
+                            ->date('d M Y'),
                         TextEntry::make('revisit')
                             ->label('Revisit')
                             ->date('d M Y')
@@ -181,7 +184,7 @@ class SendEmailReporting extends Page implements HasForms
             'cause' => $data['cause'] ?? $reporting->cause,
             'action' => $data['action'] ?? $reporting->action,
             'note' => $data['note'] ?? $reporting->note,
-            'send_mail_at' => now(),
+            'send_mail_at' => $reporting->send_mail_at ?? now(),
             'email_to' => $emailTo,
             'email_cc' => $emailCc,
         ]);
@@ -200,7 +203,7 @@ class SendEmailReporting extends Page implements HasForms
             ->success()
             ->send();
 
-        $this->redirect(SupportReportingResource::getUrl('view', ['record' => $reporting]));
+        $this->redirect(SupportReportingResource::getUrl('index', ['record' => $reporting]));
     }
 
 }

@@ -7,7 +7,7 @@
                 Kirim Email
             </x-filament::button>
             
-            <x-filament::button color="gray" size="sm" tag="a" :href="App\Filament\Resources\Support\SupportReportings\SupportReportingResource::getUrl('view', ['record' => $this->record])">
+            <x-filament::button color="gray" size="sm" tag="a" :href="App\Filament\Resources\Support\SupportReportings\SupportReportingResource::getUrl('index', ['record' => $this->record])">
                 Batal
             </x-filament::button>
         </div>

@@ -42,7 +42,7 @@ class ReportingsRelationManager extends RelationManager
                 DatePicker::make('date_visit')
                     ->required(),
                 Select::make('user_id')
-                    ->relationship('user', 'name'),
+                    ->relationship('user', 'name', fn(\Illuminate\Database\Eloquent\Builder $query) => $query->where('status', '!=', 0)),
                 Toggle::make('status'),
                 DatePicker::make('revisit'),
                 Textarea::make('note')

@@ -13,8 +13,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Schedules extends TableWidget
 {
-    protected static bool $isDiscovered = false;
-
     protected static ?string $heading = 'Schedules';
 
     protected static ?int $sort = 1;
@@ -98,5 +96,25 @@ class Schedules extends TableWidget
                     }),
             ])
             ->toolbarActions([]);
+    }
+
+    public static function canView(): bool
+    {
+        // 1. Hindari error 403 saat eksekusi Action Livewire (klik tombol Start/Livewire update)
+        if (request()->routeIs('livewire.update') || request()->header('X-Livewire')) {
+            return true;
+        }
+
+        // 2. Jika sedang berada di halaman Schedule Dashboard, selalu izinkan tampil
+        if (request()->routeIs('filament.admin.pages.schedule-dashboard')) {
+            return true;
+        }
+
+        // 3. Sembunyikan widget ini untuk head_support di tempat lain (seperti Dashboard utama)
+        if (auth()->user()?->hasRole('head_support')) {
+            return false;
+        }
+
+        return true;
     }
 }

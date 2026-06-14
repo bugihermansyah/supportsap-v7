@@ -74,7 +74,7 @@ class LocationForm
                                     ->required(),
                                 Select::make('user_id')
                                     ->label('Pic')
-                                    ->options(User::role('support')->pluck('name', 'id')),
+                                    ->options(User::role('support')->where('status', '!=', 0)->pluck('name', 'id')),
                                 Select::make('status')
                                     ->options(LocationStatus::class)
                                     ->required(),

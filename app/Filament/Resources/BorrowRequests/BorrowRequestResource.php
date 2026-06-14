@@ -18,6 +18,8 @@ class BorrowRequestResource extends Resource
 {
     protected static ?string $model = BorrowRequest::class;
 
+    protected static string |\UnitEnum| null $navigationGroup = 'Work';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowRightCircle;
 
     protected static ?string $recordTitleAttribute = 'rp_no';

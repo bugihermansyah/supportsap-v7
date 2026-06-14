@@ -13,8 +13,19 @@ class UsersTable
     {
         return $table
             ->modifyQueryUsing(function (\Illuminate\Database\Eloquent\Builder $query) {
-                if (auth()->check() && !auth()->user()->hasRole('super_admin', 'manager_support', 'helpdesk') && auth()->user()->team_id) {
-                    $query->where('team_id', auth()->user()->team_id);
+                // Sembunyikan user dengan ID 'system'
+                $query->where('id', '!=', 'system');
+
+                $user = auth()->user();
+
+                // Sembunyikan user super_admin bagi non-super_admin
+                if ($user && !$user->hasRole('super_admin')) {
+                    $query->whereDoesntHave('roles', fn (\Illuminate\Database\Eloquent\Builder $q) => $q->where('name', 'super_admin'));
+                }
+
+                // Filter berdasarkan team jika bukan role tertentu
+                if ($user && !$user->hasRole('super_admin', 'manager_support', 'helpdesk') && $user->team_id) {
+                    $query->where('team_id', $user->team_id);
                 }
             })
             ->columns([

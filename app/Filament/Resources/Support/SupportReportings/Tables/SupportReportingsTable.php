@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Support\SupportReportings\Tables;
 use App\Filament\Resources\Support\SupportReportings\SupportReportingResource;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -52,6 +53,9 @@ class SupportReportingsTable
                     ->lineClamp(2)
                     ->html(),
                 TextColumn::make('status'),
+                IconColumn::make('send_mail_at')
+                    ->label('Mail Sent')
+                    ->boolean(),
             ])
             ->defaultSort('date_visit', 'desc')
             ->filters([
@@ -59,7 +63,7 @@ class SupportReportingsTable
             ])
             ->recordActions([
                 Action::make('sendMail')
-                    ->label('Send Mail')
+                    ->label('Mail')
                     ->icon('heroicon-o-envelope')
                     ->color('success')
                     ->disabled(fn ($record) => empty($record->status))

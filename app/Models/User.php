@@ -47,7 +47,7 @@ class User extends Authenticatable implements FilamentUser, Commenter
 
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
-        return true;
+        return $this->status != 0;
     }
 
 }
