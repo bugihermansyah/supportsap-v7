@@ -15,7 +15,12 @@ class SupportReportingsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->whereHas('users', fn (Builder $q) => $q->where('user_id', auth()->id())))
+            ->modifyQueryUsing(function (Builder $query) {
+                $user = auth()->user();
+                if ($user && $user->hasAnyRole(['head_support', 'support'])) {
+                    $query->whereHas('outstanding.location', fn ($q) => $q->where('team_id', $user->team_id));
+                }
+            })
             ->columns([
                 TextColumn::make('outstanding.location.name')
                     ->label('Location')
