@@ -151,10 +151,9 @@ class BorrowRequestsTable
                             $query->whereDate('created_at', '<=', $data['created_to']);
                         }
                     }),
-            ], layout: FiltersLayout::AboveContent)
+            ], layout: FiltersLayout::Modal)
             ->defaultSort(fn (\Illuminate\Database\Eloquent\Builder $query) => $query->orderByRaw("CASE WHEN status IN ('submitted', 'waiting_return') THEN 0 ELSE 1 END")->orderBy('created_at', 'desc'))
             ->persistFiltersInSession()
-            ->filtersFormColumns(7)
             ->recordActions([
                 EditAction::make(),
             ])
