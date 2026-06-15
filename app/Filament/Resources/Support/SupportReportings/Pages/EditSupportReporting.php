@@ -53,6 +53,36 @@ class EditSupportReporting extends EditRecord
         if ($this->shouldSendEmail) {
             $this->sendReportingEmail($this->record);
         }
+
+        $reporting = $this->record;
+        $outstanding = $reporting->outstanding;
+
+        if ($outstanding) {
+            $statusValue = $reporting->status->value ?? $reporting->status;
+            $updateData = [];
+
+            if ($statusValue === '0') { // Pending
+                $updateData['date_finish'] = null;
+                $updateData['status'] = '0'; // OutstandingStatus::Open
+            } elseif ($statusValue === '1') { // Finish
+                $updateData['date_finish'] = $reporting->date_visit;
+                $updateData['status'] = '1'; // OutstandingStatus::Close
+            } elseif ($statusValue === '2') { // Pending Client
+                $updateData['date_finish'] = $reporting->date_visit;
+                $updateData['status'] = '0'; // OutstandingStatus::Open
+            } elseif ($statusValue === '3') { // Temporary
+                $updateData['date_finish'] = $reporting->date_visit;
+                $updateData['status'] = '0'; // OutstandingStatus::Open
+                $updateData['date_temporary'] = $reporting->date_visit;
+            } elseif ($statusValue === '4') { // Monitoring
+                $updateData['date_finish'] = $reporting->date_visit;
+                $updateData['status'] = '0'; // OutstandingStatus::Open
+            }
+
+            if (!empty($updateData)) {
+                $outstanding->update($updateData);
+            }
+        }
     }
 
     /**

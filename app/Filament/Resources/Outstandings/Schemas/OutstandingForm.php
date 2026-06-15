@@ -286,7 +286,24 @@ class OutstandingForm
                             Checkbox::make('is_oncall')
                                 ->label('Oncall'),
                         ])
-                        ->columns(3),           
+                        ->columns(3),
+                    Section::make('Date')
+                        ->schema([
+                            DatePicker::make('date_in')
+                                ->label('Info')
+                                ->default(now())
+                                ->maxDate(now())
+                                ->native(false)
+                                ->required(),
+                            DatePicker::make('date_visit')
+                                ->label('Visit/Remote')
+                                ->native(false),
+                            DatePicker::make('date_finish')
+                                ->label('Finish')
+                                ->native(false)
+                                ->maxDate(now()),
+                        ])
+                        ->columns(3),       
                     Section::make('Problem Unit')
                         ->schema([
                             ToggleButtons::make('is_type_problem')

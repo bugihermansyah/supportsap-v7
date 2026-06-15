@@ -4,8 +4,10 @@ namespace App\Filament\Resources\Support\SupportReportings\Pages;
 
 use App\Filament\Resources\Support\SupportReportings\SupportReportingResource;
 use App\Mail\SupportReportingMail;
+use App\Models\Customer;
 use App\Models\Reporting;
 use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
@@ -100,11 +102,15 @@ class SendEmailReporting extends Page implements HasForms
                     ->schema([
                         Section::make('Email Recipients')
                             ->schema([
-                                TagsInput::make('email_to')
+                                Select::make('email_to')
                                     ->label('Email To')
-                                    ->required(),
-                                TagsInput::make('email_cc')
-                                    ->label('Email CC'),
+                                    ->multiple()
+                                    ->required()
+                                    ->options(Customer::all()->pluck('name_email', 'email')),
+                                Select::make('email_cc')
+                                    ->label('Email CC')
+                                    ->multiple()
+                                    ->options(Customer::all()->pluck('name_email', 'email')),
                             ])
                             ->columns(2),
                         Section::make('Detail Aksi')
