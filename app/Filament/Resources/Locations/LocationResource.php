@@ -46,7 +46,7 @@ class LocationResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        if (auth()->check() && !auth()->user()->hasRole('super_admin', 'owner', 'manager', 'helpdesk', 'head_preventive')) {
+        if (auth()->check() && auth()->user()->hasRole(['head_support', 'support'])) {
             $query->where('team_id', auth()->user()->team_id);
         }
 
