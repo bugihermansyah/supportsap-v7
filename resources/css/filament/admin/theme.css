@@ -11,7 +11,6 @@
 @source '../../../../vendor/bezhansalleh/filament-exceptions/resources/views/**/*.blade.php';
 @source '../../../../vendor/guava/calendar/resources/**/*';
 
-
 @plugin "@tailwindcss/typography";
 
 .fi-ta-header-cell,
@@ -22,8 +21,6 @@
 }
 
 /* Fix: Table content rows left-aligned to match header */
-/* Edinburgh theme adds padding to .fi-ta-cell, but Filament's .fi-ta-text/.fi-ta-select */
-/* also have their own px-3 py-4. Remove inner padding so content aligns with header. */
 .fi-ta-cell .fi-ta-text:not(.fi-inline),
 .fi-ta-cell .fi-ta-select:not(.fi-inline) {
     padding: 0 !important;
@@ -38,4 +35,11 @@ span[data-type="mention"],
 a[data-type="mention"] {
     @apply bg-primary-50 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400 my-0 inline-block rounded px-1 font-medium whitespace-nowrap no-underline;
     text-decoration: none !important;
+}
+
+/* Fix Guava Calendar Dark Mode */
+.dark .ec {
+    --ec-bg-color: transparent;
+    --ec-text-color: #e4e4e7;
+    --ec-border-color: rgba(255, 255, 255, 0.1);
 }
