@@ -1,6 +1,7 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
 @import '../../../../vendor/spykapps/theme-edinburgh/resources/css/edinburgh.css';
 @import '../../../../vendor/businesstilto/commentable/resources/css/plugin.css';
+@import '../../../../vendor/guava/calendar/resources/css/theme.css';
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
@@ -8,6 +9,7 @@
 @source '../../../../vendor/awcodes/filament-quick-create/resources/**/*.blade.php';
 @source '../../../../vendor/devonab/filament-easy-footer/resources/views/**/*';
 @source '../../../../vendor/bezhansalleh/filament-exceptions/resources/views/**/*.blade.php';
+@source '../../../../vendor/guava/calendar/resources/**/*';
 
 
 @plugin "@tailwindcss/typography";
