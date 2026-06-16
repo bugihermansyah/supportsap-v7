@@ -36,7 +36,7 @@ class CalendarWidget extends FilamentCalendarWidget
 
         return $query->get()
             ->flatMap(function ($reporting) use ($currentUser) {
-                $statusValue = $reporting->getRawOriginal('status') ?? $reporting->status?->value ?? '0';
+                $statusValue = $reporting->getRawOriginal('status') ?? $reporting->status?->value ?? 'X';
                 $statusMap = [
                     '1' => 'F',
                     '0' => 'P',
