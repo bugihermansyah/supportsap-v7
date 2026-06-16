@@ -28,6 +28,8 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class BorrowRequestForm
 {
@@ -140,17 +142,94 @@ class BorrowRequestForm
                                     ->copyMessageDuration(1500),
                                 TextInput::make('rp_no')
                                     ->label('No. RP')
-                                    // ->mask('REQKRM/9999/999')
                                     ->placeholder('RP-XXXX-XXXXXX')
                                     ->mask('RP-9999-999999')
                                     ->regex('/^RP-\d{4}-\d{6}$/')
+                                    ->unique(table: 'borrow_requests', column: 'rp_no', ignoreRecord: true)
                                     ->copyable(copyMessage: 'RP Copied!', copyMessageDuration: 1500)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(function (?BorrowRequest $record, $state) {
+                                        $recordId = $record ? $record->id : null;
+
+                                        $validator = Validator::make(
+                                            ['rp_no' => $state],
+                                            [
+                                                'rp_no' => [
+                                                    'required',
+                                                    'regex:/^RP-\d{4}-\d{6}$/',
+                                                    Rule::unique('borrow_requests', 'rp_no')->ignore($recordId),
+                                                ]
+                                            ],
+                                            [
+                                                'rp_no.regex' => 'Wrong No. RP',
+                                                'rp_no.unique' => 'No. RP already exists.',
+                                            ]
+                                        );
+
+                                        if ($validator->fails()) {
+                                            $errorMessage = $validator->errors()->first('rp_no');
+
+                                            Notification::make()
+                                                ->title('Failed to Update No. RP')
+                                                ->body($errorMessage)
+                                                ->danger()
+                                                ->send();
+
+                                            return; 
+                                        }
+
                                         if ($record) {
                                             $record->update(['rp_no' => $state]);
+                                            
                                             Notification::make()
                                                 ->title('No. RP Updated')
+                                                ->success()
+                                                ->send();
+                                        }
+                                    }),
+                                TextInput::make('so_no')
+                                    ->label('No. SO')
+                                    ->placeholder('SO-XXXX-XXXXXX')
+                                    ->mask('SO-9999-999999')
+                                    ->regex('/^SO-\d{4}-\d{6}$/')
+                                    ->unique(table: 'borrow_requests', column: 'so_no', ignoreRecord: true) 
+                                    ->copyable(copyMessage: 'SO Copied!', copyMessageDuration: 1500)
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (?BorrowRequest $record, $state) {
+                                        $recordId = $record ? $record->id : null;
+
+                                        $validator = Validator::make(
+                                            ['so_no' => $state],
+                                            [
+                                                'so_no' => [
+                                                    'required',
+                                                    'regex:/^SO-\d{4}-\d{6}$/',
+                                                    Rule::unique('borrow_requests', 'so_no')->ignore($recordId),
+                                                ]
+                                            ],
+                                            [
+                                                'so_no.regex' => 'Wrong No. SO',
+                                                'so_no.unique' => 'No. SO already exists.',
+                                            ]
+                                        );
+
+                                        if ($validator->fails()) {
+                                            $errorMessage = $validator->errors()->first('so_no');
+
+                                            Notification::make()
+                                                ->title('Failed to Update No. SO')
+                                                ->body($errorMessage)
+                                                ->danger()
+                                                ->send();
+
+                                            return; 
+                                        }
+
+                                        if ($record) {
+                                            $record->update(['so_no' => $state]);
+                                            
+                                            Notification::make()
+                                                ->title('No. SO Updated')
                                                 ->success()
                                                 ->send();
                                         }
