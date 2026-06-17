@@ -32,6 +32,7 @@ use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
 use Leek\FilamentDiceBear\DiceBearPlugin;
 use Leek\FilamentDiceBear\DiceBearProvider;
 use Leek\FilamentDiceBear\Enums\DiceBearStyle;
+use Moataz01\FilamentNotificationSound\FilamentNotificationSoundPlugin;
 use SpyApp\ThemeEdinburgh\ThemeEdinburghPlugin;
 use Swis\Filament\Backgrounds\FilamentBackgroundsPlugin;
 use Swis\Filament\Backgrounds\ImageProviders\MyImages;
@@ -94,6 +95,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->defaultAvatarProvider(DiceBearProvider::class)
             ->plugins([
+                FilamentNotificationSoundPlugin::make()
+                    ->soundPath('/sounds/notification.mp3'),
                 DiceBearPlugin::make()
                     ->style(DiceBearStyle::Adventurer)
                     ->seedUsing(fn($record) => $record->name)

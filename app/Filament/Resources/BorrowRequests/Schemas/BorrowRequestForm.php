@@ -402,7 +402,7 @@ class BorrowRequestForm
                                         Select::make('unit_id')
                                             ->label('Unit')
                                             ->relationship('unit', 'name')
-                                            ->getOptionLabelFromRecordUsing(fn (\App\Models\Unit $record) => $record->discontinued_at ? "{$record->name} (Dis:" . \Carbon\Carbon::parse($record->discontinued_at)->format('d/m/Y') . ")" : $record->name)
+                                            ->getOptionLabelFromRecordUsing(fn (\App\Models\Unit $record) => $record->discontinued_at ? "{$record->name} (DC:" . \Carbon\Carbon::parse($record->discontinued_at)->format('d/m/Y') . ")" : $record->name)
                                             ->searchable()
                                             ->preload()
                                             ->required()
@@ -485,22 +485,23 @@ class BorrowRequestForm
                                             ->label('Claim'),
                                         TextInput::make('damage')
                                             ->label('Condition')
-                                            ->required(function (Get $get) {
-                                                $reqType = $get('../../request_type');
-                                                $type = $reqType instanceof \App\Enums\BorrowRequestType ? $reqType->value : $reqType;
-                                                if (request()->is('*create*') || str_contains(request()->header('referer', ''), 'create')) {
-                                                    return $type === 'pull_request';
-                                                }
-                                                return true;
-                                            })
-                                            ->hidden(function (Get $get) {
-                                                $reqType = $get('../../request_type');
-                                                $type = $reqType instanceof \App\Enums\BorrowRequestType ? $reqType->value : $reqType;
-                                                if (request()->is('*create*') || str_contains(request()->header('referer', ''), 'create')) {
-                                                    return $type !== 'pull_request';
-                                                }
-                                                return false;
-                                            }),
+                                            ->maxLength(100)
+                                            // ->required(function (Get $get) {
+                                            //     $reqType = $get('../../request_type');
+                                            //     $type = $reqType instanceof \App\Enums\BorrowRequestType ? $reqType->value : $reqType;
+                                            //     if (request()->is('*create*') || str_contains(request()->header('referer', ''), 'create')) {
+                                            //         return $type === 'pull_request';
+                                            //     }
+                                            //     return true;
+                                            // })
+                                            // ->hidden(function (Get $get) {
+                                            //     $reqType = $get('../../request_type');
+                                            //     $type = $reqType instanceof \App\Enums\BorrowRequestType ? $reqType->value : $reqType;
+                                            //     if (request()->is('*create*') || str_contains(request()->header('referer', ''), 'create')) {
+                                            //         return $type !== 'pull_request';
+                                            //     }
+                                            //     return false;
+                                            // }),
                                     ]),
                             ]),
                         Section::make('History')
