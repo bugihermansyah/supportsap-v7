@@ -31,6 +31,7 @@
         "laravel/tinker": "^3.0.0",
         "leandrocfe/filament-apex-charts": "^5.1",
         "leek/filament-dicebear": "^1.2",
+        "moataz-01/filament-notification-sound": "^1.0",
         "pxlrbt/filament-excel": "^3.6",
         "spykapps/theme-edinburgh": "^1.0",
         "stechstudio/filament-impersonate": "^5.3",
