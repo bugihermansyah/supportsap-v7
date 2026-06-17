@@ -2,12 +2,15 @@
 
 namespace App\Console\Commands;
 
+use App\Filament\Resources\BorrowRequests\BorrowRequestResource;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Webklex\IMAP\Facades\Client;
 use App\Models\BorrowRequest;
 use App\Models\BorrowRequestLog;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
 #[Signature('email:fetch-status')]
@@ -27,9 +30,9 @@ class FetchEmailUpdates extends Command
 
             $folder = $client->getFolder('INBOX');
 
-            // Find all unseen emails from the target sender
-            // $messages = $folder->query()->unseen()->from('admin-system@ptsap.co.id')->get();
-            $messages = $folder->query()->unseen()->from('bh.ptsap@gmail.com')->get();
+            // Find all unseen emails from the target sender admin-system@ptsap.co.id
+            $messages = $folder->query()->unseen()->from('admin-system@ptsap.co.id')->get();
+            // $messages = $folder->query()->unseen()->from('bh.ptsap@gmail.com')->get();
             
             $this->info('Found ' . $messages->count() . ' unread emails.');
 
@@ -157,6 +160,34 @@ class FetchEmailUpdates extends Command
 
                 $this->info("Successfully updated {$reqNo} to {$newStatus}");
                 
+                // Send Database Notification
+                $admins = \App\Models\User::role('admin')->get();
+                $requester = $borrowRequest->requester;
+
+                $statusLabels = [
+                    'delivery_scheduled' => 'Delivery Scheduled',
+                    'delivered' => 'Delivered',
+                    'pickup_scheduled' => 'Pickup Scheduled',
+                    'picked_up' => 'Picked Up',
+                ];
+                $statusLabel = $statusLabels[$newStatus] ?? $newStatus;
+
+                $notification = Notification::make()
+                    ->title("{$statusLabel}")
+                    ->icon('heroicon-o-check-circle')
+                    ->body("The request {$borrowRequest->location?->name} status has been updated to {$statusLabel} by Logistics.")
+                    ->actions([
+                        Action::make('View')
+                            ->url(BorrowRequestResource::getUrl('edit', ['record' => $borrowRequest]))
+                            ->button()
+                            ->markAsRead(),
+                    ]);
+
+                $notification->sendToDatabase($admins);
+                if ($requester) {
+                    $notification->sendToDatabase($requester);
+                }
+
                 // Mark as read
                 $message->setFlag(['Seen']);
             }
