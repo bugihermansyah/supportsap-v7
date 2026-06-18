@@ -85,14 +85,14 @@ class FetchEmailUpdates extends Command
                 }
 
                 // Find Borrow Request
-                $borrowRequest = null;
+                $borrowRequestQuery = null;
                 if ($reqType === 'REQKRM') {
-                    $borrowRequest = BorrowRequest::where('send_no', $reqNo)->first();
+                    $borrowRequestQuery = BorrowRequest::where('send_no', $reqNo);
                 } elseif ($reqType === 'REQAMB') {
-                    $borrowRequest = BorrowRequest::where('take_no', $reqNo)->first();
+                    $borrowRequestQuery = BorrowRequest::where('take_no', $reqNo);
                 }
 
-                if (!$borrowRequest) {
+                if (!$borrowRequestQuery || !$borrowRequestQuery->exists()) {
                     $this->warn("Borrow Request not found for $reqType: " . $reqNo);
                     $message->setFlag(['Seen']);
                     continue;
@@ -108,7 +108,7 @@ class FetchEmailUpdates extends Command
                     }
                 }
 
-                // Update log_status and log_at
+                // Update log_status and log_at efficiently in bulk
                 $updateData = [];
                 if ($logAt) {
                     $updateData['log_at'] = $logAt;
@@ -119,7 +119,7 @@ class FetchEmailUpdates extends Command
                 }
 
                 if (!empty($updateData)) {
-                    $borrowRequest->update($updateData);
+                    $borrowRequestQuery->update($updateData);
                 }
 
                 // Extract note from 'Dear' to 'Terima Kasih'
@@ -139,30 +139,10 @@ class FetchEmailUpdates extends Command
                 } else {
                     $emailDate = now();
                 }
-
-                // Create Log
-                $log = new BorrowRequestLog();
-                $log->borrow_request_id = $borrowRequest->id;
-                $log->action_by = 'system';
-                $log->action = $actionName;
-                $log->date = $logAt;
-                $log->note = $noteContent;
-                $log->details = $borrowRequest->units->map(function ($unit) {
-                    return [
-                        'unit_id' => $unit->unit_id,
-                        'name' => $unit->unit->name ?? 'Unknown',
-                        'qty' => $unit->qty,
-                    ];
-                })->toArray();
-                $log->created_at = $emailDate;
-                $log->updated_at = $emailDate;
-                $log->save();
-
-                $this->info("Successfully updated {$reqNo} to {$newStatus}");
                 
-                // Send Database Notification
+                $emailDateFormatted = \Carbon\Carbon::parse($emailDate)->format('Y-m-d H:i:s');
+
                 $admins = \App\Models\User::role('admin')->get();
-                $requester = $borrowRequest->requester;
 
                 $statusLabels = [
                     'delivery_scheduled' => 'Delivery Scheduled',
@@ -172,21 +152,55 @@ class FetchEmailUpdates extends Command
                 ];
                 $statusLabel = $statusLabels[$newStatus] ?? $newStatus;
 
-                $notification = Notification::make()
-                    ->title("{$statusLabel}")
-                    ->icon('heroicon-o-check-circle')
-                    ->body("The request {$borrowRequest->location?->name} status has been updated to {$statusLabel} by Logistics.")
-                    ->actions([
-                        Action::make('View')
-                            ->url(BorrowRequestResource::getUrl('edit', ['record' => $borrowRequest]))
-                            ->button()
-                            ->markAsRead(),
-                    ]);
+                // Process logs and notifications in chunks to keep memory usage low
+                $borrowRequestQuery->with(['units.unit', 'requester', 'location'])->chunkById(100, function ($borrowRequests) use ($actionName, $logAt, $noteContent, $emailDateFormatted, $newStatus, $statusLabel, $admins) {
+                    $logsToInsert = [];
+                    
+                    foreach ($borrowRequests as $borrowRequest) {
+                        // Prepare log data for bulk insert
+                        $logsToInsert[] = [
+                            'borrow_request_id' => $borrowRequest->id,
+                            'action_by' => 'system',
+                            'action' => $actionName,
+                            'date' => $logAt,
+                            'note' => $noteContent,
+                            'details' => json_encode($borrowRequest->units->map(function ($unit) {
+                                return [
+                                    'unit_id' => $unit->unit_id,
+                                    'name' => $unit->unit->name ?? 'Unknown',
+                                    'qty' => $unit->qty,
+                                ];
+                            })->toArray()),
+                            'created_at' => $emailDateFormatted,
+                            'updated_at' => $emailDateFormatted,
+                        ];
 
-                $notification->sendToDatabase($admins);
-                if ($requester) {
-                    $notification->sendToDatabase($requester);
-                }
+                        // Send Database Notification
+                        $requester = $borrowRequest->requester;
+
+                        $notification = Notification::make()
+                            ->title("{$statusLabel}")
+                            ->icon('heroicon-o-check-circle')
+                            ->body("The request {$borrowRequest->location?->name} status has been updated to {$statusLabel} by Logistics.")
+                            ->actions([
+                                Action::make('View')
+                                    ->url(BorrowRequestResource::getUrl('edit', ['record' => $borrowRequest]))
+                                    ->button()
+                                    ->markAsRead(),
+                            ]);
+
+                        $notification->sendToDatabase($admins);
+                        if ($requester) {
+                            $notification->sendToDatabase($requester);
+                        }
+                    }
+
+                    if (!empty($logsToInsert)) {
+                        BorrowRequestLog::insert($logsToInsert);
+                    }
+                });
+
+                $this->info("Successfully updated requests for {$reqNo} to {$newStatus}");
 
                 // Mark as read
                 $message->setFlag(['Seen']);

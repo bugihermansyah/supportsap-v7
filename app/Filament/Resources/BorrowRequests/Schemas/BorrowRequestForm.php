@@ -251,7 +251,12 @@ class BorrowRequestForm
                                         return "{$state} ({$record->requester->email})";
                                     })
                                     ->copyable()
-                                    ->copyableState(fn (?BorrowRequest $record) => $record?->requester?->email ?? '')
+                                    // ->copyableState(fn (?BorrowRequest $record) => $record?->requester?->email ?? '')
+                                    ->copyableState(function (?BorrowRequest $record) {
+                                        $email = $record?->requester?->email;
+                                        
+                                        return $email ? "info.supportsap@gmail.com, {$email}" : '';
+                                    })
                                     ->copyMessage('Email copied!')
                                     ->copyMessageDuration(1500),
                                 TextEntry::make('extra_note')
