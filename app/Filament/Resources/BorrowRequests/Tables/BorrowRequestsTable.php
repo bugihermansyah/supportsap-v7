@@ -51,7 +51,11 @@ class BorrowRequestsTable
                 TextColumn::make('location.full_name')
                     ->limit(22)
                     ->tooltip(fn ($record) => $record->location?->full_name)
-                    ->searchable()
+                    ->searchable(query: function (\Illuminate\Database\Eloquent\Builder $query, string $search) {
+                        return $query->whereHas('location', function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%");
+                        });
+                    })
                     ->sortable(),
                 TextColumn::make('request_type')
                     ->searchable()
