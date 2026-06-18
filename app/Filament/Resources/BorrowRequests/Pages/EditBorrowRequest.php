@@ -44,7 +44,7 @@ class EditBorrowRequest extends EditRecord
                         ->required()
                         ->placeholder('REQKRM/9999/999')
                         ->mask('REQKRM/9999/999')
-                        ->unique(BorrowRequest::class, 'send_no', ignoreRecord: true)
+                        // ->unique(BorrowRequest::class, 'send_no', ignoreRecord: true)
                         ->regex('/^REQKRM\/\d{4}\/\d{3}$/')
                         ->validationMessages([
                             'regex' => 'Format harus REQKRM/9999/999.',
