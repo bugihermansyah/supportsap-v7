@@ -3,10 +3,12 @@
 namespace App\Filament\Resources\Support\SupportReportings\Tables;
 
 use App\Filament\Resources\Support\SupportReportings\SupportReportingResource;
+use App\Models\Reporting;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -21,6 +23,9 @@ class SupportReportingsTable
                     $query->whereHas('outstanding.location', fn ($q) => $q->where('team_id', $user->team_id));
                 }
             })
+            ->recordUrl(
+                fn (Reporting $record): string => SupportReportingResource::getUrl('send-email', ['record' => $record]),
+            )
             ->columns([
                 TextColumn::make('outstanding.location.name')
                     ->label('Location')
@@ -35,10 +40,9 @@ class SupportReportingsTable
                     ->limitList(2)
                     ->expandableLimitedList()
                     ->searchable(),
-                // ->listWithLineBreaks(),
                 TextColumn::make('date_visit')
                     ->label('Date Visit')
-                    ->date(),
+                    ->date('d M Y'),
                 TextColumn::make('outstanding.title')
                     ->label('Problem')
                     ->searchable(),
@@ -64,7 +68,22 @@ class SupportReportingsTable
             ])
             ->defaultSort('date_visit', 'desc')
             ->filters([
-                //
+                SelectFilter::make('reporter')
+                    ->label('Reporter')
+                    ->options([
+                        'client' => 'Client',
+                        'preventif' => 'Preventive',
+                        'support' => 'Internal'
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['value'],
+                            fn (Builder $query, $value) => $query->whereHas(
+                                'outstanding', 
+                                fn (Builder $query) => $query->where('reporter', $value)
+                            )
+                        );
+                    })
             ])
             ->recordActions([
                 Action::make('sendMail')

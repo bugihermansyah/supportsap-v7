@@ -78,6 +78,8 @@ class SendEmailReporting extends Page implements HasForms
                             ->label('Lokasi'),
                         TextEntry::make('outstanding.title')
                             ->label('Masalah'),
+                        TextEntry::make('outstanding.reporter')
+                            ->label('Reporter'),
                         TextEntry::make('date_visit')
                             ->label('Tanggal Aksi')
                             ->date('d M Y'),

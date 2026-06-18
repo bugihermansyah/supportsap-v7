@@ -59,8 +59,8 @@ class SupportReportingResource extends Resource
             'index' => ListSupportReportings::route('/'),
             'create' => CreateSupportReporting::route('/create'),
             // 'view' => ViewSupportReporting::route('/{record}'),
-            'edit' => EditSupportReporting::route('/{record}/edit'),
             'send-email' => SendEmailReporting::route('/{record}/send-email'),
+            'edit' => EditSupportReporting::route('/{record}/edit'),
         ];
     }
 }
