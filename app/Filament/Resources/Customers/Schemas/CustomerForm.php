@@ -15,6 +15,8 @@ class CustomerForm
                 TextInput::make('name')
                     ->required(),
                 TextInput::make('tlp')
+                    ->tel()
+                    ->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/')
                     ->required(),
                 TextInput::make('email')
                     ->label('Email address')

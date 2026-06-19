@@ -122,18 +122,24 @@ class LocationForm
                                         \Filament\Forms\Components\Hidden::make('is_contact_shipping')->default(0),
                                         Select::make('customer_id')
                                             ->label('Email')
-                                            ->options(Customer::all()->pluck('name_email', 'id'))
-                                            ->searchable()
+                                            ->relationship('customer', 'name')
+                                            ->getOptionLabelFromRecordUsing(fn (Customer $record) => $record->name_email)
+                                            ->searchable(['name', 'email'])
+                                            ->preload()
                                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                             ->required()
                                             ->createOptionForm([
                                                 TextInput::make('name')
                                                     ->required(),
                                                 TextInput::make('tlp')
+                                                    ->unique('customers', 'tlp', ignoreRecord: true)
+                                                    ->tel()
+                                                    ->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/')
                                                     ->required(),
                                                 TextInput::make('email')
                                                     ->label('Email address')
                                                     ->email()
+                                                    ->unique('customers', 'email', ignoreRecord: true)
                                                     ->required(),
                                                 Textarea::make('description')
                                                     ->columnSpanFull(),
@@ -162,13 +168,31 @@ class LocationForm
                                         \Filament\Forms\Components\Hidden::make('is_contact_shipping')->default(1),
                                         Select::make('customer_id')
                                             ->label('Contact')
-                                            ->options(Customer::all()->pluck('name_tlp', 'id'))
-                                            ->searchable()
+                                            ->relationship('customer', 'name')
+                                            ->getOptionLabelFromRecordUsing(fn (Customer $record) => $record->name_tlp)
+                                            ->searchable(['name', 'tlp'])
+                                            ->preload()
                                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                            ->required(),
+                                            ->required()
+                                            ->createOptionForm([
+                                                TextInput::make('name')
+                                                    ->required(),
+                                                TextInput::make('tlp')
+                                                    ->tel()
+                                                    ->telRegex('/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\.\/0-9]*$/')
+                                                    ->unique('customers', 'tlp', ignoreRecord: true)
+                                                    ->required(),
+                                            ])
+                                            ->createOptionAction(function (Action $action) {
+                                                return $action
+                                                    ->modalHeading('Create contact')
+                                                    ->modalSubmitActionLabel('Create contact')
+                                                    ->modalWidth(Width::Large);
+                                            }),
                                     ])
                                     ->addActionLabel('Add PIC')
                                     ->defaultItems(1)
+                                    ->maxItems(1)
                                     ->collapsible(),
                             ]),
                     ])

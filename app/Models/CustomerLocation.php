@@ -10,10 +10,12 @@ class CustomerLocation extends Model
         'customer_id',
         'location_id',
         'is_to',
+        'is_contact_shipping',
     ];
 
     protected $casts = [
         'is_to' => 'boolean',
+        'is_contact_shipping' => 'boolean',
     ];
 
     public function customer()

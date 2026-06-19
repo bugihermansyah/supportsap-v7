@@ -15,8 +15,8 @@ class OutstandingsTable
     {
         return $table
             ->columns([
-                TextColumn::make('number')
-                    ->searchable(),
+                // TextColumn::make('number')
+                //     ->searchable(),
                 TextColumn::make('location.company.alias')
                     ->label('Company')
                     ->searchable(),
@@ -34,6 +34,7 @@ class OutstandingsTable
                     ->formatStateUsing(fn ($state) => ucwords($state))
                     ->searchable(),
                 TextColumn::make('reporter_name')
+                    ->label('R. Name')
                     ->searchable(),
                 TextColumn::make('date_in')
                     ->label('Date Info')
