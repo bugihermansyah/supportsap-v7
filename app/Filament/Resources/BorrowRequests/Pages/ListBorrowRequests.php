@@ -23,6 +23,10 @@ class ListBorrowRequests extends ListRecords
 
     public function getTabs(): array
     {
+        if (! auth()->user()?->hasRole(['super_admin', 'admin'])) {
+            return [];
+        }
+
         return [
             'New Request' => Tab::make()
                 ->modifyQueryUsing(fn(Builder $query) => $query->where('status', BorrowRequestStatus::Submitted))
