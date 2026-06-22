@@ -37,6 +37,8 @@ class BorrowRequestsTable
                     }
                 }
             })
+            ->poll('20s')
+            ->defaultPaginationPageOption(25)
             ->columns([
                 TextColumn::make('created_at')
                     ->label('Requested Date')
