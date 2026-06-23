@@ -103,8 +103,7 @@ class ManageReportingOutstanding extends ManageRelatedRecords
                     ->imageGallery()
                     ->stacked()
                     ->circular()
-                    ->limit(3)
-                    ->overlap(4)
+                    ->overlap(6)
                     ->ring(3, '#ffffffff')
             ])
             ->filters([
