@@ -21,7 +21,7 @@ class ReportClaimUnit extends Page implements HasTable
 
     protected static ?string $navigationLabel = 'Report Claim Unit';
 
-    protected ?string $heading = 'Report Claim Unit (Ketabrak/Nimpa)';
+    protected ?string $heading = 'Report Claim Unit';
 
     public static function canAccess(): bool
     {
