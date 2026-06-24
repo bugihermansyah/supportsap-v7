@@ -10,6 +10,8 @@ use App\Models\Unit;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use pxlrbt\FilamentExcel\Actions\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class RecapBorrowUnit extends Page implements HasTable
 {
@@ -54,6 +56,15 @@ class RecapBorrowUnit extends Page implements HasTable
                     ->label('Qty')
                     ->sortable(),
             ])
-            ->defaultSort('unit_name', 'asc');
+            ->defaultSort('unit_name', 'asc')
+            ->headerActions([
+                ExportAction::make()->exports([
+                    ExcelExport::make()
+                        ->askForWriterType()
+                        ->withFilename(date('Y-m-d H:i:s') . ' - recap-borrow-unit')
+                        ->fromTable()
+                ])
+                    
+            ]);
     }
 }

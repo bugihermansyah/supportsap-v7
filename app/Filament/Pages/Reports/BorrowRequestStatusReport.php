@@ -16,6 +16,8 @@ use Filament\Tables\Enums\FiltersLayout;
 use Filament\Forms\Components\DatePicker;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use pxlrbt\FilamentExcel\Actions\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class BorrowRequestStatusReport extends Page implements HasTable
 {
@@ -219,6 +221,15 @@ class BorrowRequestStatusReport extends Page implements HasTable
             ], layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(4)
             ->defaultSort('created_at', 'desc')
-            ->persistFiltersInSession();
+            ->persistFiltersInSession()
+            ->headerActions([
+                ExportAction::make()->exports([
+                    ExcelExport::make()
+                        ->askForWriterType()
+                        ->withFilename(date('Y-m-d H:i:s') . ' - recap-borrow-request-status')
+                        ->fromTable()
+                ])
+                    
+            ]);
     }
 }

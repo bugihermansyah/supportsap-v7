@@ -8,6 +8,8 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Table;
 use App\Models\BorrowRequestUnit;
 use Filament\Tables\Columns\TextColumn;
+use pxlrbt\FilamentExcel\Actions\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class ReportClaimUnit extends Page implements HasTable
 {
@@ -63,6 +65,15 @@ class ReportClaimUnit extends Page implements HasTable
                     ->date('d M Y')
                     ->sortable(),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('created_at', 'desc')
+            ->headerActions([
+                ExportAction::make()->exports([
+                    ExcelExport::make()
+                        ->askForWriterType()
+                        ->withFilename(date('Y-m-d H:i:s') . ' - recap-claim-unit')
+                        ->fromTable()
+                ])
+                    
+            ]);
     }
 }
