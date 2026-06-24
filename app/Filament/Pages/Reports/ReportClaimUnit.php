@@ -35,6 +35,9 @@ class ReportClaimUnit extends Page implements HasTable
                 BorrowRequestUnit::query()
                     ->with(['borrowRequest', 'unit'])
                     ->where('is_claim', true)
+                    ->whereHas('borrowRequest', function ($query) {
+                        $query->whereNotIn('status', ['cancelled', 'rejected']);
+                    })
             )
             ->columns([
                 TextColumn::make('borrowRequest.rp_no')
