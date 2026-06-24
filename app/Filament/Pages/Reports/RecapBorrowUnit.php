@@ -47,6 +47,7 @@ class RecapBorrowUnit extends Page implements HasTable
                     ->select('units.id', 'units.name as unit_name', DB::raw('SUM(borrow_request_units.qty) as total_qty'))
                     ->groupBy('units.id', 'units.name')
             )
+            ->defaultPaginationPageOption(25)
             ->columns([
                 TextColumn::make('unit_name')
                     ->label('Unit')

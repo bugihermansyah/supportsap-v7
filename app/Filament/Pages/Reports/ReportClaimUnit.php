@@ -41,6 +41,7 @@ class ReportClaimUnit extends Page implements HasTable
                         $query->whereNotIn('status', ['cancelled', 'rejected']);
                     })
             )
+            ->defaultPaginationPageOption(25)
             ->columns([
                 TextColumn::make('borrowRequest.rp_no')
                     ->label('No. RP')

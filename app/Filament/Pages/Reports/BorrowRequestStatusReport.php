@@ -52,6 +52,7 @@ class BorrowRequestStatusReport extends Page implements HasTable
                             ->where('warehouse_id', 1);
                     })
             )
+            ->defaultPaginationPageOption(25)
             ->columns([
                 TextColumn::make('approved_date')
                     ->label('Request Date')
