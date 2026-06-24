@@ -59,7 +59,10 @@ class ReportClaimUnit extends Page implements HasTable
                     ->label('Qty')
                     ->sortable(),
                 TextColumn::make('damage')
-                    ->label('Condition / Keterangan')
+                    ->label('Condition')
+                    ->searchable(),
+                TextColumn::make('borrowRequest.so_no')
+                    ->label('No. SO')
                     ->searchable(),
                 TextColumn::make('borrowRequest.created_at')
                     ->label('Date Requested')
