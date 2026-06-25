@@ -136,6 +136,7 @@ class AdminPanelProvider extends PanelProvider
                     ->customMyProfilePage(\App\Filament\Pages\Settings::class)
                     ->myProfileComponents([
                         'map' => \App\Livewire\UpdateUserProfile::class,
+                        'simulasi_KPI' => \App\Livewire\KpiSimulator::class,
                     ]),
                 QuickCreatePlugin::make()
                     ->includes([
@@ -144,7 +145,7 @@ class AdminPanelProvider extends PanelProvider
                     ]),
                 EasyFooterPlugin::make()
                     ->withFooterPosition('footer')
-                    ->withSentence('Made with ☕ & 🚬 by @bugihermansyah  | v2026.2.0.2 |')
+                    ->withSentence('Made with ☕ & 🚬 by @bugihermansyah | v2026.2.0.2 |')
                     ->withLoadTime(),
                 \BezhanSalleh\FilamentExceptions\FilamentExceptionsPlugin::make(),
             ])
