@@ -45,9 +45,18 @@ class User extends Authenticatable implements FilamentUser, Commenter
         return $this->belongsTo(Team::class);
     }
 
+    public function profile()
+    {
+        return $this->hasOne(UserProfile::class);
+    }
+
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
         return $this->status != 0;
     }
 
+    public function getAvatarUrlAttribute()
+    {
+        return null;
+    }
 }

@@ -8,6 +8,7 @@ use App\Filament\Resources\Outstandings\OutstandingResource;
 use Awcodes\QuickCreate\QuickCreatePlugin;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Devonab\FilamentEasyFooter\EasyFooterPlugin;
+use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -61,7 +62,6 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 NavigationGroup::make()
                     ->label('Work'),
-                    // ->icon(Heroicon::OutlinedShoppingCart),
                 NavigationGroup::make()
                     ->label('Main'),
                 NavigationGroup::make()
@@ -127,7 +127,16 @@ class AdminPanelProvider extends PanelProvider
                 ),
                 FilamentLoggerPlugin::make(),
                 BreezyCore::make()
-                    ->myProfile(),
+                    ->myProfile(
+                        hasAvatars: false,
+                        slug: 'settings',
+                        navigationIcon: 'heroicon-o-cog-6-tooth',
+                        shouldRegisterUserMenu: false
+                    )
+                    ->customMyProfilePage(\App\Filament\Pages\Settings::class)
+                    ->myProfileComponents([
+                        'map' => \App\Livewire\UpdateUserProfile::class,
+                    ]),
                 QuickCreatePlugin::make()
                     ->includes([
                         OutstandingResource::class,
@@ -142,6 +151,17 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarWidth('14rem')
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            ->userMenuItems([
+                Action::make('profile')
+                    ->label(fn() => auth()->user()->name)
+                    ->url(fn (): string => \App\Filament\Pages\MyProfile::getUrl())
+                    ->sort(-1),
+                Action::make('settings')
+                    ->label('Settings')
+                    ->url(fn (): string => \App\Filament\Pages\Settings::getUrl())
+                    ->icon('heroicon-o-cog-6-tooth')
+                    ->sort(1),
             ])
             ->maxContentWidth(Width::Full)
             ->viteTheme('resources/css/filament/admin/theme.css');
