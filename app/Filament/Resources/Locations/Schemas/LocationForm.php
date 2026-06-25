@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Locations\Schemas;
 use App\Enums\LocationStatus;
 use App\Models\Customer;
 use App\Models\User;
+use Fahiem\FilamentPinpoint\Pinpoint;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -74,18 +75,45 @@ class LocationForm
                                     ->required(),
                                 Select::make('user_id')
                                     ->label('Pic')
-                                    ->options(User::role('support')->where('status', '!=', 0)->pluck('name', 'id')),
+                                    ->preload()
+                                    ->searchable()
+                                    ->options(User::role(['head_support', 'support'])->where('status', '!=', 0)->pluck('name', 'id')),
                                 Select::make('status')
                                     ->options(LocationStatus::class)
                                     ->required(),
+                                Toggle::make('is_ho')
+                                    ->label('Is HO SAP?')
+                                    ->default(false),
                                 Textarea::make('address'),
                                 Textarea::make('description'),
                                 FileUpload::make('image')
-                                    ->image()
+                                    ->image()                                    
                                     ->columnSpanFull(),
                             ])
                             ->columns(2),
+                        Section::make()
+                            ->schema([
+                                Pinpoint::make('location')
+                                    ->dehydrated(false)
+                                    ->label('Map')
+                                    ->latField('lat')
+                                    ->lngField('lng')
+                                    ->draggable()
+                                    ->searchable()
+                                    ->addressField('address')
+                                    ->columnSpanFull(),
 
+                                TextInput::make('lat')
+                                    ->label('Latitude')
+                                    ->required()
+                                    ->readOnly(),
+
+                                TextInput::make('lng')
+                                    ->label('Longitude')
+                                    ->required()
+                                    ->readOnly(),
+                            ])
+                            ->columns(2)
                     ])
                     ->columnSpan(2),
                 Group::make()
@@ -118,6 +146,7 @@ class LocationForm
                                         TableColumn::make('CC/To')
                                             ->width(75),
                                     ])
+                                    ->compact()
                                     ->schema([
                                         \Filament\Forms\Components\Hidden::make('is_contact_shipping')->default(0),
                                         Select::make('customer_id')

@@ -17,6 +17,7 @@ class Location extends Model
     {
         return [
             'status' => LocationStatus::class,
+            'is_ho' => 'boolean',
             'email_to' => 'array',
             'email_cc' => 'array'
         ];
