@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Locations\Tables;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -68,6 +70,10 @@ class LocationsTable
                     ->label('Support')
                     ->formatStateUsing(fn($state) => ucwords($state))
                     ->searchable(),
+                IconColumn::make('lat')
+                    ->label('Map')
+                    ->boolean()
+                    ->trueIcon(Heroicon::OutlinedMapPin),
                 TextColumn::make('status')
                     ->searchable(),
                 TextColumn::make('created_at')
