@@ -18,11 +18,17 @@ class MyProfile extends Page
         $user = filament()->auth()->user();
 
         $totalOutstandings = Outstanding::where('user_id', $user->id)->count();
-        $totalReportings = Reporting::where('user_id', $user->id)->count();
-        $avgScore = Reporting::where('user_id', $user->id)->avg('score') ?? 0;
+        $totalReportings = Reporting::whereHas('reportingUsers', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->count();
+        $avgScore = Reporting::whereHas('reportingUsers', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->avg('score') ?? 0;
         $totalBorrows = BorrowRequest::where('requester_id', $user->id)->count();
         
-        $recentReportings = Reporting::where('user_id', $user->id)
+        $recentReportings = Reporting::whereHas('reportingUsers', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })
             ->latest()
             ->take(5)
             ->get()
