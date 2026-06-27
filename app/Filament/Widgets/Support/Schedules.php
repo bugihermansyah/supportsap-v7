@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Schedules extends TableWidget
 {
-    protected static ?string $heading = 'Schedules';
+    protected static ?string $heading = 'Pastikan report sesuai urutan kunjungan!';
 
     protected static ?int $sort = 1;
 
@@ -28,14 +28,17 @@ class Schedules extends TableWidget
                     TextColumn::make('date_visit')
                         ->label('Schedule')
                         ->icon('heroicon-m-calendar-days')
+                        ->size('sm')
                         ->date('d M Y'),
                     TextColumn::make('outstanding.location.full_name')
                         ->label('Location')
+                        ->size('sm')
                         ->icon('heroicon-m-map-pin'),
                     TextColumn::make('outstanding.title')
                         ->label('Problem')
+                        ->size('sm')
                         ->icon('heroicon-m-briefcase')
-                ]),
+                ])->space(1),
             ])
             ->defaultSort('created_at', direction: 'desc')
             ->contentGrid([
@@ -53,6 +56,7 @@ class Schedules extends TableWidget
                     ->label('')
                     ->icon('heroicon-m-map-pin')
                     ->button()
+                    ->size('sm')
                     ->disabled(fn($record) => empty($record->outstanding?->location?->latitude) || empty($record->outstanding?->location?->longitude))
                     ->tooltip('View on Google Maps')
                     ->color('success')
@@ -73,6 +77,52 @@ class Schedules extends TableWidget
                 Action::make('start')
                     ->label('Start')
                     ->button()
+                    ->size('sm')
+                    ->mountUsing(function ($record, $action) {
+                        $userId = auth()->id();
+
+                        // 1. Validasi jadwal yang lebih lama
+                        $hasOlder = \App\Models\Reporting::whereHas('users', fn($q) => $q->where('user_id', $userId))
+                            ->whereNull('status')
+                            ->where('date_visit', '<', $record->date_visit)
+                            ->exists();
+
+                        if ($hasOlder) {
+                            \Filament\Notifications\Notification::make()
+                                ->danger()
+                                ->title('Peringatan')
+                                ->body('Mohon proses jadwal kunjungan terlama terlebih dahulu!')
+                                ->send();
+                            
+                            $action->halt();
+                        }
+
+                        // 2. Validasi jadwal aktif di lokasi/tanggal berbeda
+                        $activeSchedule = \App\Models\Reporting::whereHas('users', fn($q) => $q->where('user_id', $userId))
+                            ->whereNull('status')
+                            ->whereNotNull('start_work')
+                            ->where('id', '!=', $record->id)
+                            ->with('outstanding')
+                            ->first();
+
+                        if ($activeSchedule) {
+                            $activeLocationId = $activeSchedule->outstanding?->location_id;
+                            $activeDate = $activeSchedule->date_visit;
+
+                            $currentLocationId = $record->outstanding?->location_id;
+                            $currentDate = $record->date_visit;
+
+                            if ($activeLocationId !== $currentLocationId || $activeDate !== $currentDate) {
+                                \Filament\Notifications\Notification::make()
+                                    ->danger()
+                                    ->title('Peringatan')
+                                    ->body('Selesaikan jadwal aktif di lokasi lain dahulu!')
+                                    ->send();
+                                    
+                                $action->halt();
+                            }
+                        }
+                    })
                     ->action(function ($record) {
                         $record->update([
                             'start_work' => now(),
@@ -85,10 +135,27 @@ class Schedules extends TableWidget
                     ->modalHeading('Start work')
                     ->modalDescription('Are you sure you want to start this Outstanding?')
                     ->modalSubmitActionLabel('Yes, starting'),
+                Action::make('cancelStart')
+                    ->label('')
+                    ->icon('heroicon-m-x-circle')
+                    ->button()
+                    ->color('gray')
+                    ->size('sm')
+                    ->visible(fn(Model $record) => $record->start_work)
+                    ->requiresConfirmation()
+                    ->modalHeading('Batalkan Pekerjaan')
+                    ->modalDescription('Apakah Anda yakin ingin membatalkan pekerjaan (Start Work) untuk jadwal ini?')
+                    ->modalSubmitActionLabel('Ya, batalkan')
+                    ->action(function ($record) {
+                        $record->update([
+                            'start_work' => null,
+                        ]);
+                    }),
                 Action::make('updateReport')
                     ->label('Report')
                     ->icon('heroicon-m-document-plus')
                     ->button()
+                    ->size('sm')
                     ->color('success')
                     ->visible(fn(Model $record) => $record->start_work)
                     ->url(function ($record) {
