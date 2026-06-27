@@ -12,6 +12,11 @@ class ScheduleDashboard extends BaseDashboard
 
     protected static string $routePath = 'schedule-dashboard';
 
+    public function getHeading(): string|\Illuminate\Contracts\Support\Htmlable
+    {
+        return '';
+    }
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedDevicePhoneMobile;
 
     protected static string |\UnitEnum| null $navigationGroup = 'Work';
