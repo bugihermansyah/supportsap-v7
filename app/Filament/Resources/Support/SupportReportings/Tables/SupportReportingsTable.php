@@ -6,6 +6,7 @@ use App\Filament\Resources\Support\SupportReportings\SupportReportingResource;
 use App\Models\Reporting;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -62,8 +63,15 @@ class SupportReportingsTable
                     ->lineClamp(2)
                     ->html(),
                 TextColumn::make('status'),
+                TextColumn::make('score')
+                    ->label('Score')
+                    ->badge()
+                    ->color(fn ($state) => $state >= 90 ? 'success' : ($state >= 80 ? 'warning' : 'danger')),
+                TextColumn::make('reportingUsers.distance')
+                    ->label('Dist (KM)')
+                    ->numeric(decimalPlaces: 0),
                 IconColumn::make('send_mail_at')
-                    ->label('Mail Sent')
+                    ->label('Notif')
                     ->boolean(),
             ])
             ->defaultSort('date_visit', 'desc')
@@ -86,13 +94,24 @@ class SupportReportingsTable
                     })
             ])
             ->recordActions([
+                ViewAction::make()
+                    ->hiddenLabel(),
                 Action::make('sendMail')
-                    ->label('Mail')
+                    ->hiddenLabel()
                     ->icon('heroicon-o-envelope')
                     ->color('success')
                     ->disabled(fn ($record) => empty($record->status))
                     ->url(fn ($record): string => SupportReportingResource::getUrl('send-email', ['record' => $record])),
-                EditAction::make(),
+                Action::make('evaluate')
+                    ->label('Evaluate')
+                    ->icon('heroicon-o-clipboard-document-check')
+                    ->color('info')
+                    ->hiddenLabel()
+                    ->fillForm(SupportReportingResource::getEvaluationFillFormCallback())
+                    ->form(SupportReportingResource::getEvaluationFormSchema())
+                    ->action(SupportReportingResource::getEvaluationActionCallback()),
+                EditAction::make()
+                    ->hiddenLabel(),
             ])
             ->toolbarActions([]);
     }
