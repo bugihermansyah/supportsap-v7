@@ -39,6 +39,14 @@ class ManageReportingOutstanding extends ManageRelatedRecords
                 TextInput::make('cause')
                     ->required()
                     ->maxLength(255),
+                TextInput::make('score')
+                    ->label('Score (0-100)')
+                    ->numeric()
+                    ->minValue(0)
+                    ->maxValue(100),
+                TextInput::make('evaluation_note')
+                    ->label('Evaluation Note')
+                    ->maxLength(255),
             ]);
     }
 
@@ -97,6 +105,17 @@ class ManageReportingOutstanding extends ManageRelatedRecords
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge(),
+                TextColumn::make('score')
+                    ->label('Score')
+                    ->numeric()
+                    ->sortable()
+                    ->badge()
+                    ->color(fn ($state): string => match (true) {
+                        $state >= 85 => 'success',
+                        $state >= 70 => 'warning',
+                        $state !== null => 'danger',
+                        default => 'gray',
+                    }),
                 SpatieMediaLibraryImageColumn::make('attachments')
                     ->allCollections()
                     ->filterMediaUsing(fn ($media) => $media->filter(fn ($item) => in_array($item->collection_name, ['default', 'attachments'])))
