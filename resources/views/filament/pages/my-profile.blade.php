@@ -1,4 +1,9 @@
 <x-filament-panels::page>
+    <div class="flex justify-end mb-2">
+        <div class="w-full md:w-1/3 xl:w-1/4">
+            {{ $this->getSchema('filterSchema') }}
+        </div>
+    </div>
     <div class="space-y-6">
         <!-- Header & Stats -->
         <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -18,29 +23,41 @@
             </x-filament::section>
 
             <!-- Stats -->
-            <div class="md:col-span-2 grid grid-cols-2 gap-4">
+            <div class="md:col-span-2 grid grid-cols-3 gap-4">
                 <x-filament::section class="flex flex-col items-center justify-center">
                     <div class="text-center">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Avg KPI Score</p>
-                        <h3 class="text-4xl font-bold text-primary-600 dark:text-primary-400">{{ $avgScore }}</h3>
+                        <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">KPIScore</p>
+                        <h3 class="text-4xl sm:text-4xl font-bold text-primary-600 dark:text-primary-400">{{ $avgScore }}</h3>
                     </div>
                 </x-filament::section>
                 <x-filament::section class="flex flex-col items-center justify-center">
                     <div class="text-center">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Reportings</p>
-                        <h3 class="text-4xl font-bold text-success-600 dark:text-success-400">{{ $totalReportings }}</h3>
+                        <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Reportings</p>
+                        <h3 class="text-4xl sm:text-4xl font-bold text-success-600 dark:text-success-400">{{ $totalReportings }}</h3>
                     </div>
                 </x-filament::section>
                 <x-filament::section class="flex flex-col items-center justify-center">
                     <div class="text-center">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Outstandings</p>
-                        <h3 class="text-4xl font-bold text-warning-600 dark:text-warning-400">{{ $totalOutstandings }}</h3>
+                        <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Outstandings</p>
+                        <h3 class="text-4xl sm:text-4xl font-bold text-warning-600 dark:text-warning-400">{{ $totalOutstandings }}</h3>
                     </div>
                 </x-filament::section>
                 <x-filament::section class="flex flex-col items-center justify-center">
                     <div class="text-center">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Borrow Requests</p>
-                        <h3 class="text-4xl font-bold text-danger-600 dark:text-danger-400">{{ $totalBorrows }}</h3>
+                        <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Borrows</p>
+                        <h3 class="text-4xl sm:text-4xl font-bold text-danger-600 dark:text-danger-400">{{ $totalBorrows }}</h3>
+                    </div>
+                </x-filament::section>
+                <x-filament::section class="flex flex-col items-center justify-center">
+                    <div class="text-center">
+                        <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">LuarKota</p>
+                        <h3 class="text-4xl sm:text-4xl font-bold text-info-600 dark:text-info-400">{{ $totalOutOfTown }}</h3>
+                    </div>
+                </x-filament::section>
+                <x-filament::section class="flex flex-col items-center justify-center">
+                    <div class="text-center">
+                        <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Distance (KM)</p>
+                        <h3 class="text-4xl sm:text-3xl font-bold text-gray-600 dark:text-gray-400">{{ $totalDistance }}</h3>
                     </div>
                 </x-filament::section>
             </div>
