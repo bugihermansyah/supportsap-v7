@@ -110,12 +110,13 @@ class FetchEmailUpdates extends Command
 
                 // Update log_status and log_at efficiently in bulk
                 $updateData = [];
-                if ($logAt) {
-                    $updateData['log_at'] = $logAt;
-                }
 
                 if (in_array($newStatus, ['delivery_scheduled', 'delivered'])) {
                     $updateData['log_status'] = $newStatus;
+
+                    if ($logAt) {
+                        $updateData['log_at'] = $logAt;
+                    }
                 }
 
                 if (!empty($updateData)) {
