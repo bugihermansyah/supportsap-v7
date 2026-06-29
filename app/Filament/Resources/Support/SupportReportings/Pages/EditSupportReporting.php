@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Support\SupportReportings\Pages;
 
+use App\Enums\ReportStatus;
 use App\Filament\Resources\Support\SupportReportings\SupportReportingResource;
 use App\Mail\SupportReportingMail;
 use Filament\Actions\Action;
@@ -38,6 +39,11 @@ class EditSupportReporting extends EditRecord
             unset($data['is_type_problem']);
         }
 
+        // Jika lokasi HO, paksa status menjadi Finish
+        if ($this->record->outstanding?->location?->is_ho) {
+            $data['status'] = ReportStatus::Finish->value;
+        }
+    
         // Set end_work on the first save only (when it's still null)
         if (empty($this->record->end_work)) {
             $data['end_work'] = now();
@@ -83,6 +89,8 @@ class EditSupportReporting extends EditRecord
                 $outstanding->update($updateData);
             }
         }
+
+        \App\Jobs\CalculateSupportTravelDistance::dispatch($this->record->id);
     }
 
     /**

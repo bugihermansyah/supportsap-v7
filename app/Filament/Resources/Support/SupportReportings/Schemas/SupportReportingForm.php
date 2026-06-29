@@ -15,7 +15,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
@@ -39,6 +39,7 @@ class SupportReportingForm
                                 ->native(false)
                                 ->prefix('Action')
                                 ->columnSpanFull()
+                                ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
                                 ->required(),
                             ToggleButtons::make('work')
                                 ->label('Action Type')
@@ -53,6 +54,7 @@ class SupportReportingForm
                                     'remote' => 'warning',
                                 ])
                                 ->default('visit')
+                                ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
                                 ->grouped()
                                 ->required(),
                             TextInput::make('cause')
@@ -74,6 +76,7 @@ class SupportReportingForm
                                 ]),
                             RichEditor::make('note')
                                 ->label('Note')
+                                ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
                                 ->toolbarButtons([
                                     'bold',
                                     'bulletList',
@@ -86,19 +89,22 @@ class SupportReportingForm
                                 ->columnSpanFull(),
                         ]),
                     Step::make('Statuss')
+                        ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
                         ->schema([
                             ToggleButtons::make('status')
                                 ->inline()
                                 ->live()
                                 ->options(ReportStatus::class)
                                 ->helperText(new HtmlString('Jika selain <strong>Finish</strong> wajib isi next target'))
-                                ->required(),
+                                ->required(fn(?Model $record) => !($record?->outstanding?->location?->is_ho ?? false)),
                             DatePicker::make('revisit')
                                 ->label('Revisit')
                                 ->hiddenLabel()
                                 ->placeholder('Date next target')
                                 ->requiredIf('status', ['0', '2', '3', '4'])
-                                ->hidden(function (Get $get) {
+                                ->hidden(function (Get $get, ?Model $record) {
+                                    if ($record?->outstanding?->location?->is_ho) return true;
+
                                     $status = $get('status');
 
                                     if ($status instanceof ReportStatus) {
@@ -112,12 +118,14 @@ class SupportReportingForm
                                 ->label('Problem Type')
                                 ->hiddenLabel()
                                 ->helperText(new HtmlString('Setiap <strong>tipe problem</strong> wajib menyertakan kerusakan unit'))
-                                ->required()
+                                ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
+                                ->required(fn(?Model $record) => !($record?->outstanding?->location?->is_ho ?? false))
                                 ->options(OutstandingTypeProblem::class)
                                 ->formatStateUsing(fn(Model $record) => $record->outstanding->is_type_problem ?? 'NON')
                                 ->inline(),
                             Placeholder::make('table_repeater_style')
                                 ->hiddenLabel()
+                                ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
                                 ->content(new \Illuminate\Support\HtmlString('
                                     <style>
                                         .force-table-repeater > table { display: table !important; width: 100% !important; }
@@ -136,6 +144,7 @@ class SupportReportingForm
                             Repeater::make('outstandingUnits')
                                 ->label('Unit')
                                 ->hiddenLabel()
+                                ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
                                 ->relationship()
                                 ->extraAttributes(['class' => 'force-table-repeater'])
                                 ->reorderable(false)
@@ -170,23 +179,54 @@ class SupportReportingForm
                                 ->columns(2)
                                 ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
                                 ->collapsible(),
-                            SpatieMediaLibraryFileUpload::make('attachments')
-                                ->image()
-                                ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png'])
-                                ->multiple()
-                                ->maxSize(10240)
-                                ->optimize('jpg', 50)
-                                ->resize(50)
-                                ->imageEditor()
-                                ->panelLayout('grid')
-                                ->openable()
-                                ->collection('attachments')
-                                ->downloadable()
-                                ->maxImageWidth(1360)
-                                // ->maxImageHeight(1080)
-                                ->maxFiles(10)
-                                ->preserveFilenames()
-                                ->columnSpanFull(),
+                            Group::make([
+                                SpatieMediaLibraryFileUpload::make('attachments')
+                                    ->label('Photos')
+                                    ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
+                                    ->image()
+                                    ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png'])
+                                    ->multiple()
+                                    ->maxSize(10240)
+                                    ->optimize('jpg', 50)
+                                    ->resize(50)
+                                    ->imageEditor()
+                                    // ->panelLayout('grid')
+                                    ->openable()
+                                    ->collection('attachments')
+                                    ->downloadable()
+                                    ->maxImageWidth(1360)
+                                    ->previewable(false)
+                                    // ->imagePreviewHeight('50')
+                                    // ->maxImageHeight(1080)
+                                    ->maxFiles(10)
+                                    ->preserveFilenames(),
+                                SpatieMediaLibraryFileUpload::make('form_support')
+                                    ->label('Form Support')
+                                    ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
+                                    ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png'])
+                                    ->maxSize(10240)
+                                    // ->panelLayout('grid')
+                                    ->optimize('jpg', 50)
+                                    ->resize(50)
+                                    ->openable()
+                                    ->collection('form_support')
+                                    ->downloadable()
+                                    ->previewable(true)
+                                    ->preserveFilenames(),
+                            ]),
+                            // Section::make('Evaluation (Admin/PIC Only)')
+                            //     ->schema([
+                            //         TextInput::make('score')
+                            //             ->label('Score (0-100)')
+                            //             ->numeric()
+                            //             ->minValue(0)
+                            //             ->maxValue(100),
+                            //         TextInput::make('evaluation_note')
+                            //             ->label('Evaluation Note')
+                            //             ->maxLength(255),
+                            //     ])
+                            //     ->columns(2)
+                            //     ->collapsible(),
                         ]),
                 ])
             ]);
