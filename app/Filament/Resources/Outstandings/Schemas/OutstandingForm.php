@@ -23,7 +23,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Fieldset;
-use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -54,6 +53,9 @@ class OutstandingForm
                             Toggle::make('task')
                                 ->label('New Outstanding')
                                 ->dehydrated(false)
+                                ->extraAttributes([
+                                    'x-on:keydown.window.ctrl.1.prevent' => '$el.click()',
+                                ])
                                 ->live(),
                             Select::make('location_id')
                                 ->label('Location')
@@ -61,14 +63,15 @@ class OutstandingForm
                                 ->options(function () {
                                     $user = auth()->user();
                                     
-                                    if ($user->hasAnyRole(['super_admin', 'admin', 'owner', 'head_support'])) {
+                                    if ($user->hasAnyRole(['super_admin', 'admin', 'owner'])) {
                                         return Location::with('company')->get()->pluck('full_name', 'id');
                                     }
 
                                     return Location::where('team_id', $user->getTeamId())
+                                        ->orWhere('is_ho', true)
                                         ->with('company')
                                         ->get()
-                                        ->pluck('name_alias', 'id');
+                                        ->pluck('full_name', 'id');
                                 })
                                 ->required()
                                 ->live()
@@ -91,6 +94,7 @@ class OutstandingForm
                             Select::make('reporter')
                                 ->label('Reporter')
                                 ->visible(fn($get) => $get('task'))
+                                ->hidden(fn(Get $get) => Location::find($get('location_id'))?->is_ho)
                                 ->options([
                                     'client' => 'Client',
                                     'preventif' => 'Preventif',
@@ -98,11 +102,12 @@ class OutstandingForm
                                 ])
                                 ->default('client')
                                 ->live()
-                                ->required(),
+                                ->required(fn(Get $get) => !Location::find($get('location_id'))?->is_ho),
                             TextInput::make('reporter_name')
                                 ->label('Reporter Name')
                                 ->visible(fn($get) => $get('task'))
-                                ->required(),
+                                ->hidden(fn(Get $get) => Location::find($get('location_id'))?->is_ho)
+                                ->required(fn(Get $get) => !Location::find($get('location_id'))?->is_ho),
                             DatePicker::make('date_in')
                                 ->label('Info Date')
                                 ->visible(fn($get) => $get('task'))
@@ -142,14 +147,35 @@ class OutstandingForm
                                 ->label('Problem')
                                 ->reorderable(false)
                                 ->defaultItems(1)
-                                ->simple(
+                                ->hidden(fn(Get $get) => Location::find($get('location_id'))?->is_ho)
+                                ->compact()
+                                ->table([
+                                    TableColumn::make('title'),
+                                    TableColumn::make('level')
+                                        ->width('130px')
+                                ])
+                                ->schema([
                                     TextInput::make('title')
                                         ->hiddenLabel()
                                         ->required(),
-                                )
+                                    Select::make('level')
+                                        ->label('Tingkat Kesulitan')
+                                        ->hiddenLabel()
+                                        ->options([
+                                            1 => 'Very Easy',
+                                            2 => 'Easy',
+                                            3 => 'Normal',
+                                            4 => 'Hard',
+                                            5 => 'Very Hard',
+                                        ])
+                                        ->default(3)
+                                        ->required(),
+                                ])
+                                // ->columns(2)
                                 ->visible(fn($get) => $get('task'))
                                 ->defaultItems(1),
                             Fieldset::make('Produk')
+                                ->hidden(fn(Get $get) => Location::find($get('location_id'))?->is_ho)
                                 ->schema([
                                     Radio::make('product_id')
                                         ->label('Produk')
@@ -165,6 +191,7 @@ class OutstandingForm
                                 ->visible(fn($get) => $get('task'))
                                 ->reactive(),
                             Fieldset::make('Status')
+                                ->hidden(fn(Get $get) => Location::find($get('location_id'))?->is_ho)
                                 ->schema([
                                     Checkbox::make('is_implement')
                                         ->label('Implementasi')
@@ -220,7 +247,17 @@ class OutstandingForm
                                 ->dehydrated(false),
                             Select::make('location_id')
                                 ->label('Location')
-                                ->options(Location::query()->pluck('name', 'id'))
+                                ->options(function () {
+                                    $user = auth()->user();
+                                    
+                                    if ($user->hasAnyRole(['super_admin', 'admin', 'owner'])) {
+                                        return Location::query()->pluck('name', 'id');
+                                    }
+
+                                    return Location::where('team_id', $user->getTeamId())
+                                        ->orWhere('is_ho', true)
+                                        ->pluck('name', 'id');
+                                })
                                 ->live()
                                 ->afterStateHydrated(function ($set, $state) {
                                     if ($state) {
@@ -234,6 +271,7 @@ class OutstandingForm
                                 ->required(),
                             Select::make('product_id')
                                 ->label('Product')
+                                ->hidden(fn(Get $get) => Location::find($get('location_id'))?->is_ho)
                                 ->options(fn (Get $get): Collection => Contract::query()
                                     ->where('location_id', $get('location_id'))
                                     ->join('products', 'products.id', '=', 'contracts.product_id')
@@ -278,6 +316,7 @@ class OutstandingForm
             Group::make()
                 ->schema([         
                     Section::make('Status')
+                        ->hidden(fn(Get $get) => Location::find($get('location_id'))?->is_ho)
                         ->schema([
                             Checkbox::make('status')
                                 ->label('Closed'),
@@ -305,6 +344,7 @@ class OutstandingForm
                         ])
                         ->columns(3),       
                     Section::make('Problem Unit')
+                        ->hidden(fn(Get $get) => Location::find($get('location_id'))?->is_ho)
                         ->schema([
                             ToggleButtons::make('is_type_problem')
                                 ->label('Type Problem')

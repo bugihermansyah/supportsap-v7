@@ -23,18 +23,20 @@ class CreateOutstanding extends CreateRecord
         $isTask = $this->data['task'] ?? false;
 
         if ($isTask) {
-            foreach (($data['problems'] ?? []) as $problem) {
+            $problems = empty($data['problems']) ? [['title' => 'Internal Activity', 'level' => 3]] : $data['problems'];
+            foreach ($problems as $problem) {
                 // Create new outstanding  
                 $dataCreate = [
                     'number' => 'SP-' . Carbon::now()->format('ym') . '' . (random_int(100000, 999999)),
                     'location_id' => $data['location_id'],
                     'product_id' => $data['product_id'] ?? null,
                     'team_id' => Location::find($data['location_id'])->team_id,
-                    'reporter' => $data['reporter'] ?? 'client',
-                    'reporter_name' => $data['reporter_name'] ?? '',
+                    'reporter' => Location::find($data['location_id'])?->is_ho ? 'support' : ($data['reporter'] ?? 'client'),
+                    'reporter_name' => Location::find($data['location_id'])?->is_ho ? auth()->user()->name : ($data['reporter_name'] ?? ''),
                     'is_implement' => $data['is_implement'] ?? false,
                     'is_oncall' => $data['is_oncall'] ?? false,
                     'title' => is_array($problem) ? ($problem['title'] ?? '') : $problem,
+                    'level' => is_array($problem) ? ($problem['level'] ?? 3) : 3,
                     'date_in' => $data['date_in'] ?? null,
                     'date_visit' => $data['date_visit'],
                     'user_id' => auth()->id(),
