@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets\HeadSupport;
 
+use App\Enums\OutstandingStatus;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,8 @@ class HeadSupportOverview extends StatsOverviewWidget
         $user = auth()->user();
 
         // Initialize the query for locations
-        $locationQuery = DB::table('locations');
+        $locationQuery = DB::table('locations')
+            ->where('status','!=', 'inactive');
 
         // Apply team filter if the user has a team and is not an admin
         if ($user->team_id && !$user->hasRole('admin')) {
@@ -38,7 +40,7 @@ class HeadSupportOverview extends StatsOverviewWidget
         // Initialize the query for outstandings
         $outstandingQuery = DB::table('outstandings')
             ->join('locations', 'outstandings.location_id', '=', 'locations.id')
-            ->where('outstandings.status', 0);
+            ->where('outstandings.status', OutstandingStatus::Open);
 
         // Apply team filter for outstandings based on user's team and location
         if ($user->team_id && !$user->hasRole('admin')) {
@@ -56,7 +58,7 @@ class HeadSupportOverview extends StatsOverviewWidget
             ->mergeBindings($latestStatuses)
             ->join('outstandings', 'outstandings.id', '=', 'latest.outstanding_id')
             ->join('locations', 'locations.id', '=', 'outstandings.location_id')
-            ->where('outstandings.status', 0)
+            ->where('outstandings.status', OutstandingStatus::Open)
             ->where('outstandings.is_implement', 0)
             ->where('outstandings.date_in', '<=', now()->subDays(3))
             ->where('outstandings.reporter', '!=', 'preventif')
@@ -103,6 +105,6 @@ class HeadSupportOverview extends StatsOverviewWidget
 
     public static function canView(): bool
     {
-        return auth()->user()?->hasRole('head_support');
+        return auth()->user()?->hasAnyRole(['head_support', 'manager','helpdesk']);
     }
 }

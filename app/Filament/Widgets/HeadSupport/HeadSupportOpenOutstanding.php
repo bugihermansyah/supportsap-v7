@@ -27,7 +27,9 @@ class HeadSupportOpenOutstanding extends TableWidget
                     ->whereRaw('reportings.created_at = (SELECT MAX(r2.created_at) FROM reportings r2 WHERE r2.outstanding_id = reportings.outstanding_id)')
                     ->whereHas('outstanding', function ($query) use ($user) {
                         $query->where('status', \App\Enums\OutstandingStatus::Open)
-                              ->where('reporter', 'client');
+                              ->where('outstandings.is_implement', 0)
+                              ->where('outstandings.date_in', '<=', now()->subDays(3))
+                              ->whereIn('reporter', ['client','support']);
 
                         if ($user && $user->team_id && ! $user->hasRole('admin')) {
                             $query->whereHas('location', function ($q) use ($user) {
@@ -37,6 +39,11 @@ class HeadSupportOpenOutstanding extends TableWidget
                     });
             })
             ->columns([
+                TextColumn::make('outstanding.location.team.name')
+                    ->label('Team')
+                    ->sortable()
+                    ->visible(fn() => auth()->user()?->hasAnyRole(['manager','helpdesk']))
+                    ->searchable(),
                 TextColumn::make('outstanding.location.name')
                     ->label('Location')
                     ->sortable()
@@ -129,6 +136,6 @@ class HeadSupportOpenOutstanding extends TableWidget
 
     public static function canView(): bool
     {
-        return auth()->user()?->hasRole('head_support');
+        return auth()->user()?->hasAnyRole(['head_support', 'manager','helpdesk']);
     }
 }
