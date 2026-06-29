@@ -62,7 +62,7 @@ class GeneralSettings extends AbstractPageSettings
             'kpi_sameday_bonus' => 15,
             'kpi_bonus_very_hard' => 15,
             'kpi_bonus_hard' => 10,
-            'kpi_grade_a_plus_min' => 101,
+            'kpi_grade_a_plus_min' => 100,
             'kpi_grade_a_min' => 85,
             'kpi_grade_b_min' => 70,
             'kpi_grade_c_min' => 50,
