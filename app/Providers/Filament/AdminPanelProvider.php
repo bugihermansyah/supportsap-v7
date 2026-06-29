@@ -145,7 +145,7 @@ class AdminPanelProvider extends PanelProvider
                     ]),
                 EasyFooterPlugin::make()
                     ->withFooterPosition('footer')
-                    ->withSentence('Made with ☕ & 🚬 by @bugihermansyah | v2026.2.0.2 |')
+                    ->withSentence('Made with ☕ & 🚬 by @bugihermansyah | v2026.2.1.2 |')
                     ->withLoadTime(),
                 \BezhanSalleh\FilamentExceptions\FilamentExceptionsPlugin::make(),
             ])
