@@ -21,7 +21,9 @@ class SupportReportingsTable
             ->modifyQueryUsing(function (Builder $query) {
                 $user = auth()->user();
                 if ($user && $user->hasAnyRole(['head_support', 'support'])) {
-                    $query->whereHas('outstanding.location', fn ($q) => $q->where('team_id', $user->team_id));
+                    $query->whereHas('users', function ($q) use ($user) {
+                        $q->where('team_id', $user->team_id);
+                    });
                 }
             })
             ->recordUrl(
@@ -64,9 +66,10 @@ class SupportReportingsTable
                     ->html(),
                 TextColumn::make('status'),
                 TextColumn::make('score')
-                    ->label('Score')
                     ->badge()
-                    ->color(fn ($state) => $state >= 90 ? 'success' : ($state >= 80 ? 'warning' : 'danger')),
+                    ->formatStateUsing(fn ($state) => $state === null ? '-' : Reporting::getScoreGrade($state))
+                    ->tooltip(fn ($state) => $state === null ? '-' : "{$state}")
+                    ->color(fn ($state) => $state === null ? 'gray' : Reporting::getScoreColor($state)),
                 TextColumn::make('reportingUsers.distance')
                     ->label('Dist (KM)')
                     ->numeric(decimalPlaces: 0),
