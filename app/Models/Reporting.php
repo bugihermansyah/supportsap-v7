@@ -69,8 +69,8 @@ class Reporting extends Model implements HasMedia
         });
 
         static::updating(function (Reporting $reporting) {
-            // If score is explicitly set to null (meaning user cleared it), or if it's somehow null, recalculate it
-            if ($reporting->score === null) {
+            // Recalculate score on update, unless it was explicitly modified (e.g. manual evaluation)
+            if (! $reporting->isDirty('score')) {
                 $reporting->score = $reporting->calculateAutoScore();
             }
         });
@@ -142,7 +142,7 @@ class Reporting extends Model implements HasMedia
         $graceDays = $level >= 4 ? 1 : 0; // Hard/Very Hard gets 1 day tolerance
 
         $visitDate = \Carbon\Carbon::parse($this->date_visit ?? now())->startOfDay();
-        $inputDate = $this->created_at ? $this->created_at->startOfDay() : now()->startOfDay();
+        $inputDate = $this->end_work ? \Carbon\Carbon::parse($this->end_work)->startOfDay() : ($this->updated_at ? $this->updated_at->startOfDay() : now()->startOfDay());
 
         if ($inputDate->gt($visitDate)) {
             $daysLate = $inputDate->diffInDays($visitDate);
