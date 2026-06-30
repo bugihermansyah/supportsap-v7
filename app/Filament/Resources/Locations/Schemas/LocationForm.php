@@ -34,6 +34,8 @@ class LocationForm
                             ->schema([
                                 Select::make('company_id')
                                     ->label('Company')
+                                    ->searchable()
+                                    ->preload()
                                     ->relationship('company', 'alias')
                                     ->createOptionForm([
                                         TextInput::make('alias')
