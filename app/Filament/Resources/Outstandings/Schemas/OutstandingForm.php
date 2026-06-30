@@ -78,6 +78,15 @@ class OutstandingForm
                                 ->afterStateUpdated(function (Set $set, $state) {
                                     if (!$state) return;
 
+                                    $location = \App\Models\Location::find($state);
+                                    if ($location && (empty($location->lat) || empty($location->lng))) {
+                                        \Filament\Notifications\Notification::make()
+                                            ->title('Perhatian')
+                                            ->body('Titik Map lokasi ini belum ditentukan!')
+                                            ->warning()
+                                            ->send();
+                                    }
+
                                     $defaultProduct = Contract::query()
                                         ->where('location_id', $state)
                                         ->where('is_default', 1)
@@ -124,6 +133,25 @@ class OutstandingForm
                                 ->multiple()
                                 ->searchable()
                                 ->required()
+                                ->live()
+                                ->afterStateUpdated(function ($state, $old) {
+                                    $state = is_array($state) ? $state : [];
+                                    $old = is_array($old) ? $old : [];
+                                    $newlyAdded = array_diff($state, $old);
+                                    
+                                    if (empty($newlyAdded)) return;
+
+                                    $users = \App\Models\User::with('profile')->whereIn('id', $newlyAdded)->get();
+                                    foreach ($users as $user) {
+                                        if (!$user->profile || empty($user->profile->lat) || empty($user->profile->lng)) {
+                                            \Filament\Notifications\Notification::make()
+                                                ->title('Perhatian')
+                                                ->body("{$user->name} belum menentukan titik Map tempat tinggalnya!")
+                                                ->warning()
+                                                ->send();
+                                        }
+                                    }
+                                })
                                 ->options(function () {
                                     $teams = Team::with(['users' => function($query) {
                                         $query->where('status', '!=', 0);
@@ -265,7 +293,20 @@ class OutstandingForm
                                     }
                                 })
                                 ->afterStateUpdated(function ($set, $state) {
-                                    $set('company_alias', \App\Models\Location::find($state)?->company?->alias);
+                                    if ($state) {
+                                        $location = \App\Models\Location::find($state);
+                                        $set('company_alias', $location?->company?->alias);
+
+                                        if ($location && (empty($location->lat) || empty($location->lng))) {
+                                            \Filament\Notifications\Notification::make()
+                                                ->title('Perhatian')
+                                                ->body('Coordinate (Lat & Lng) lokasi ini belum ditentukan!')
+                                                ->warning()
+                                                ->send();
+                                        }
+                                    } else {
+                                        $set('company_alias', null);
+                                    }
                                 })
                                 ->searchable()
                                 ->required(),
