@@ -131,8 +131,10 @@ class MyProfile extends Page
             ->values();
 
         $totalDistance = \App\Models\ReportingUser::where('user_id', $user->id)
-            ->when($month !== 'all', fn ($query) => $query->whereMonth('created_at', $month))
-            ->whereYear('created_at', $year)
+            ->whereHas('reporting', function ($query) use ($month, $year) {
+                $query->when($month !== 'all', fn ($q) => $q->whereMonth('date_visit', $month))
+                      ->whereYear('date_visit', $year);
+            })
             ->sum('distance') ?? 0;
 
         if ($totalDistance >= 1000000) {
