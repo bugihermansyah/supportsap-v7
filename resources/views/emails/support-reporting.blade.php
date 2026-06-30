@@ -22,6 +22,10 @@
 
 <table style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6;">
 <tr>
+<td style="padding: 2px 0; color: #6b7280; width: 140px; vertical-align: top;">Location:</td>
+<td style="padding: 2px 0;">{{ $location?->company?->alias ?? '-' }} - {{ $location?->name ?? '-' }}</td>
+</tr>
+<tr>
 <td style="padding: 2px 0; color: #6b7280; width: 140px; vertical-align: top;">Info Date:</td>
 <td style="padding: 2px 0;">{{ $outstanding?->date_in ? \Carbon\Carbon::parse($outstanding->date_in)->translatedFormat('d M Y') : '-' }}</td>
 </tr>
@@ -34,7 +38,7 @@
 <td style="padding: 2px 0;">{{ $users->pluck('name')->join(', ') ?: '-' }} / {{ ucfirst($reporting->work ?? '-') }}</td>
 </tr>
 <tr>
-<td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Reporter:</td>
+<td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Reported by:</td>
 <td style="padding: 2px 0;">Bpk/Ibu {{ $outstanding?->reporter_name ?? '-' }}</td>
 </tr>
 </table>
