@@ -101,7 +101,7 @@ class MonthlyTeamReportChart extends ApexChartWidget
                     'data' => $this->getTotalVisitData($year, $teamId),
                 ],
                 [
-                    'name' => 'Total LPM 1',
+                    'name' => 'Total LPM',
                     'data' => $this->getLaporanAwalMasukData($year, $teamId),
                 ],
                 [
@@ -247,18 +247,18 @@ class MonthlyTeamReportChart extends ApexChartWidget
     {
         $data = array_fill(0, 12, 0);
 
-        $query = Reporting::selectRaw('MONTH(reportings.date_visit) as month, COUNT(*) as count')
+        $query = Reporting::selectRaw('MONTH(outstandings.date_in) as month, COUNT(*) as count')
             ->join('outstandings', 'reportings.outstanding_id', '=', 'outstandings.id')
             ->join('locations', 'outstandings.location_id', '=', 'locations.id')
             ->where('reportings.work', 'visit')
             ->where('outstandings.reporter', '=', 'client')
-            ->whereYear('reportings.date_visit', $year);
+            ->whereYear('outstandings.date_in', $year);
 
         if ($teamId) {
             $query->where('locations.team_id', $teamId);
         }
 
-        $results = $query->groupByRaw('MONTH(reportings.date_visit)')->get();
+        $results = $query->groupByRaw('MONTH(outstandings.date_in)')->get();
 
         foreach ($results as $result) {
             $data[$result->month - 1] = (int) $result->count;
