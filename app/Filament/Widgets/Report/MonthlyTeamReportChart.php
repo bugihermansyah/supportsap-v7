@@ -227,7 +227,6 @@ class MonthlyTeamReportChart extends ApexChartWidget
         $query = Outstanding::query()
             ->selectRaw('MONTH(date_in) as month, COUNT(DISTINCT outstandings.location_id) as count')
             ->join('locations', 'outstandings.location_id', '=', 'locations.id')
-            ->where('outstandings.status', '0') // Open / masalah
             ->where('outstandings.reporter', '=', 'client')
             ->whereYear('date_in', $year);
 
