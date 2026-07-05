@@ -152,6 +152,8 @@ class ReportAllReporting extends Page implements HasTable
                 SelectFilter::make('company_id')
                     ->label('Group')
                     ->multiple()
+                    ->searchable()
+                    ->preload()
                     ->options(function () {
                         $q = Location::with('company');
                         $user = auth()->user();
@@ -170,6 +172,8 @@ class ReportAllReporting extends Page implements HasTable
                 SelectFilter::make('location_id')
                     ->label('Location')
                     ->multiple()
+                    ->searchable()
+                    ->preload()
                     ->options(function () {
                         $q = Location::query();
                         $user = auth()->user();
