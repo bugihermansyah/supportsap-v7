@@ -109,6 +109,28 @@
                     </ul>
                 </div>
             </x-filament::section>
+
+            <!-- Distance 7 Days -->
+            <x-filament::section heading="Distance (Last 7 Days)" class="md:col-span-2 h-fit">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 dark:bg-gray-800 rounded-t-lg">
+                            <tr>
+                                <th class="px-4 py-2 font-medium text-gray-500 dark:text-gray-400 rounded-tl-lg">Date</th>
+                                <th class="px-4 py-2 font-medium text-gray-500 dark:text-gray-400 text-right rounded-tr-lg">Distance (KM)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            @foreach($last7DaysDistance as $item)
+                                <tr>
+                                    <td class="px-4 py-2">{{ $item['date'] }}</td>
+                                    <td class="px-4 py-2 text-right font-bold">{{ $item['distance'] }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </x-filament::section>
         </div>
     </div>
 </x-filament-panels::page>

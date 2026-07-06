@@ -145,6 +145,20 @@ class MyProfile extends Page
             $formattedDistance = round($totalDistance, 1);
         }
 
+        $last7DaysDistance = collect(range(0, 6))->map(function ($day) use ($user) {
+            $date = now()->subDays($day)->format('Y-m-d');
+            $distance = \App\Models\ReportingUser::where('user_id', $user->id)
+                ->whereHas('reporting', function ($query) use ($date) {
+                    $query->whereDate('date_visit', $date);
+                })
+                ->sum('distance') ?? 0;
+                
+            return [
+                'date' => now()->subDays($day)->format('d M'),
+                'distance' => round($distance, 1),
+            ];
+        })->reverse()->values();
+
         return [
             'user' => $user,
             'totalOutstandings' => $totalOutstandings,
@@ -154,6 +168,7 @@ class MyProfile extends Page
             'totalOutOfTown' => $totalOutOfTown,
             'totalDistance' => $formattedDistance,
             'recentActivities' => $recentActivities,
+            'last7DaysDistance' => $last7DaysDistance,
         ];
     }
 }
