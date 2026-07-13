@@ -29,10 +29,22 @@
 <td style="padding: 2px 0; color: #6b7280; width: 140px; vertical-align: top;">Info Date:</td>
 <td style="padding: 2px 0;">{{ $outstanding?->date_in ? \Carbon\Carbon::parse($outstanding->date_in)->translatedFormat('d M Y') : '-' }}</td>
 </tr>
+@if(!isset($excludeWorkTime) || $excludeWorkTime)
 <tr>
 <td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Visit Date:</td>
 <td style="padding: 2px 0;">{{ $reporting->date_visit ? \Carbon\Carbon::parse($reporting->date_visit)->translatedFormat('d M Y') : '-' }}</td>
 </tr>
+@endif
+@if(isset($excludeWorkTime) && !$excludeWorkTime)
+<tr>
+<td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Arrival:</td>
+<td style="padding: 2px 0;">{{ $reporting->start_work ? \Carbon\Carbon::parse($reporting->start_work)->format('d M Y H:i') : '-' }}</td>
+</tr>
+<tr>
+<td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Departure:</td>
+<td style="padding: 2px 0;">{{ $reporting->end_work ? \Carbon\Carbon::parse($reporting->end_work)->format('d M Y H:i') : '-' }}</td>
+</tr>
+@endif
 <tr>
 <td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Support:</td>
 <td style="padding: 2px 0;">{{ $users->pluck('name')->join(', ') ?: '-' }} / {{ ucfirst($reporting->work ?? '-') }}</td>

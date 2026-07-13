@@ -20,6 +20,7 @@ class SupportReportingMail extends Mailable
     public function __construct(
         public Reporting $reporting,
         public bool $isInternal = true,
+        public bool $excludeWorkTime = true,
     ) {}
 
     /**
@@ -52,6 +53,7 @@ class SupportReportingMail extends Mailable
                 'location' => $this->reporting->outstanding?->location,
                 'team' => $this->reporting->outstanding?->location?->team,
                 'users' => $this->reporting->users,
+                'excludeWorkTime' => $this->excludeWorkTime,
             ],
         );
     }

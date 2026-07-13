@@ -6,24 +6,23 @@ use App\Filament\Resources\Support\SupportReportings\SupportReportingResource;
 use App\Mail\SupportReportingMail;
 use App\Models\Customer;
 use App\Models\Reporting;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
-use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\HtmlString;
-use Inerba\DbConfig\DbConfig;
 
 class SendEmailReporting extends Page implements HasForms
 {
@@ -51,6 +50,9 @@ class SendEmailReporting extends Page implements HasForms
             'note' => $this->record->note,
             'email_to' => $emailTo,
             'email_cc' => $emailCc,
+            'start_work' =>$this->record->start_work,
+            'end_work' =>$this->record->end_work,
+            'exclude_work_time' => true,
         ]);
     }
 
@@ -113,6 +115,19 @@ class SendEmailReporting extends Page implements HasForms
                                     ->label('Email CC')
                                     ->multiple()
                                     ->options(Customer::all()->pluck('name_email', 'email')),
+                                Checkbox::make('exclude_work_time')
+                                    ->label('Disable Work Time')
+                                    ->default(true)
+                                    ->columnSpanFull()
+                                    ->live(),
+                                DateTimePicker::make('start_work')
+                                    ->label('Start Work')
+                                    ->required()
+                                    ->hidden(fn (Get $get): bool => (bool) $get('exclude_work_time')),
+                                DateTimePicker::make('end_work')
+                                    ->label('End Work')
+                                    ->required()
+                                    ->hidden(fn (Get $get): bool => (bool) $get('exclude_work_time')),
                             ])
                             ->columns(2),
                         Section::make('Detail Aksi')
@@ -174,6 +189,7 @@ class SendEmailReporting extends Page implements HasForms
         
         $emailTo = $data['email_to'] ?? [];
         $emailCc = $data['email_cc'] ?? [];
+        $excludeWorkTime = $data['exclude_work_time'] ?? true;
 
         if (empty($emailTo)) {
             Notification::make()
@@ -192,6 +208,8 @@ class SendEmailReporting extends Page implements HasForms
             'cause' => $data['cause'] ?? $reporting->cause,
             'action' => $data['action'] ?? $reporting->action,
             'note' => $data['note'] ?? $reporting->note,
+            'start_work' => $data['start_work'] ?? $reporting->start_work,
+            'end_work' => $data['end_work'] ?? $reporting->end_work,
             'send_mail_at' => $reporting->send_mail_at ?? now(),
             'email_to' => $emailTo,
             'email_cc' => $emailCc,
@@ -204,7 +222,7 @@ class SendEmailReporting extends Page implements HasForms
             $mail->cc($emailCc);
         }
 
-        $mail->queue(new SupportReportingMail($reporting, false));
+        $mail->queue(new SupportReportingMail($reporting, false, $excludeWorkTime));
 
         Notification::make()
             ->title('Email berhasil dikirim!')
