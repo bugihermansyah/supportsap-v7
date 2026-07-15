@@ -68,7 +68,7 @@ class EngineerGridWidget extends Widget
             
             // Last reporting
             $lastReporting = (clone $reportingQuery)->latest('date_visit')->first();
-            $engineer->last_reporting = $lastReporting && $lastReporting->date_visit ? $lastReporting->date_visit->diffForHumans() : '-';
+            $engineer->last_reporting = $lastReporting && $lastReporting->date_visit ? \Carbon\Carbon::parse($lastReporting->date_visit)->diffForHumans() : '-';
 
             // Outstanding count
             $outstandingQuery = Outstanding::where('user_id', $engineer->id)
