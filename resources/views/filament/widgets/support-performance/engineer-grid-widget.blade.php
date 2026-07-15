@@ -72,7 +72,7 @@
                     <div class="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700">
                         <x-filament::button 
                             tag="a" 
-                            href="{{ \App\Filament\Pages\UserKpiReport::getUrl(['user_id' => $engineer->id]) }}" 
+                            {{-- href="{{ \App\Filament\Pages\UserKpiReport::getUrl(['user_id' => $engineer->id]) }}"  --}}
                             color="gray" 
                             size="sm" 
                             class="w-full justify-center"

@@ -115,8 +115,8 @@ class PerformanceRankingWidget extends BaseWidget
             ->actions([
                 Action::make('view_profile')
                     ->label('View Profile')
-                    ->icon('heroicon-m-user')
-                    ->url(fn (User $record): string => \App\Filament\Pages\UserKpiReport::getUrl(['user_id' => $record->id])),
+                    ->icon('heroicon-m-user'),
+                    // ->url(fn (User $record): string => \App\Filament\Pages\UserKpiReport::getUrl(['user_id' => $record->id])),
             ]);
     }
 }
