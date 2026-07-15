@@ -40,7 +40,7 @@ class SupportPerformance extends BaseDashboard
                             ->label('Team')
                             ->options(Team::pluck('name', 'id'))
                             ->searchable()
-                            ->visible(fn () => auth()->user()->hasAnyRole(['head_support', 'manager', 'super_admin', 'helpdesk'])),
+                            ->visible(fn () => auth()->user()->hasAnyRole(['manager', 'super_admin', 'helpdesk'])),
                         // Select::make('user_id')
                         //     ->label('Engineer')
                         //     ->options(User::pluck('name', 'id'))
