@@ -30,8 +30,12 @@ class SupportReportingsTable
                 fn (Reporting $record): string => SupportReportingResource::getUrl('send-email', ['record' => $record]),
             )
             ->columns([
+                TextColumn::make('date_visit')
+                    ->label('Visit Date')
+                    ->date('d M Y'),
                 TextColumn::make('outstanding.location.name')
                     ->label('Location')
+                    ->limit(17)
                     ->searchable(),
                 TextColumn::make('outstanding.reporter')
                     ->label('Reporter')
@@ -43,14 +47,12 @@ class SupportReportingsTable
                     ->limitList(2)
                     ->expandableLimitedList()
                     ->searchable(),
-                TextColumn::make('date_visit')
-                    ->label('Date Visit')
-                    ->date('d M Y'),
                 TextColumn::make('outstanding.title')
                     ->label('Problem')
                     ->searchable(),
                 TextColumn::make('cause')
                     ->label('Cause')
+                    ->wrap()
                     ->searchable(),
                 TextColumn::make('action')
                     ->label('Action')
@@ -64,7 +66,8 @@ class SupportReportingsTable
                     ->wrap()
                     ->lineClamp(2)
                     ->html(),
-                TextColumn::make('status'),
+                TextColumn::make('status')
+                    ->badge(),
                 TextColumn::make('score')
                     ->badge()
                     ->formatStateUsing(fn ($state) => $state === null ? '-' : Reporting::getScoreGrade($state))
@@ -105,14 +108,14 @@ class SupportReportingsTable
                     ->color('success')
                     ->disabled(fn ($record) => empty($record->status))
                     ->url(fn ($record): string => SupportReportingResource::getUrl('send-email', ['record' => $record])),
-                Action::make('evaluate')
-                    ->label('Evaluate')
-                    ->icon('heroicon-o-clipboard-document-check')
-                    ->color('info')
-                    ->hiddenLabel()
-                    ->fillForm(SupportReportingResource::getEvaluationFillFormCallback())
-                    ->form(SupportReportingResource::getEvaluationFormSchema())
-                    ->action(SupportReportingResource::getEvaluationActionCallback()),
+                // Action::make('evaluate')
+                //     ->label('Evaluate')
+                //     ->icon('heroicon-o-clipboard-document-check')
+                //     ->color('info')
+                //     ->hiddenLabel()
+                //     ->fillForm(SupportReportingResource::getEvaluationFillFormCallback())
+                //     ->form(SupportReportingResource::getEvaluationFormSchema())
+                //     ->action(SupportReportingResource::getEvaluationActionCallback()),
                 EditAction::make()
                     ->hiddenLabel(),
             ])

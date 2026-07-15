@@ -111,6 +111,7 @@ class HeadSupportOpenOutstanding extends TableWidget
                         ? ($state >= 0 ? "{$state} days left" : abs($state) . ' days ago')
                         : $state),
             ])
+            ->recordUrl(fn ($record) => route('filament.admin.resources.outstandings.edit', ['record' => $record->outstanding->id]))
             ->filters([
                 SelectFilter::make('reportings.status')
                     ->label('Status')
