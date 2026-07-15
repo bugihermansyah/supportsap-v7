@@ -66,6 +66,8 @@ class BorrowDeliveredTable extends BaseWidget
                     ->date('d M Y')
                     ->sortable(),
             ])
+            ->recordUrl(fn ($record) => route('filament.admin.resources.borrow-requests.edit', ['record' => $record->borrowRequest->id]))
             ->defaultSort('borrowRequest.log_at', 'asc');
+
     }
 }
