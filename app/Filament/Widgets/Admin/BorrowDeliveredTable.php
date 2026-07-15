@@ -31,7 +31,13 @@ class BorrowDeliveredTable extends BaseWidget
             ->query(
                 BorrowRequestUnit::query()
                     ->whereHas('borrowRequest', function (Builder $query) {
-                        $query->where('log_status', BorrowRequestStatus::Delivered);
+                        $query->whereIn('log_status', [
+                            BorrowRequestStatus::DeliveryScheduled,
+                            BorrowRequestStatus::Delivered,
+                        ])->whereNotIn('status', [
+                            BorrowRequestStatus::WaitingReturn,
+                            BorrowRequestStatus::Returned,
+                        ]);
                     })
             )
             ->columns([
@@ -50,11 +56,16 @@ class BorrowDeliveredTable extends BaseWidget
                 TextColumn::make('qty')
                     ->label('Qty')
                     ->sortable(),
+                TextColumn::make('borrowRequest.log_status')
+                    ->label('Status')
+                    // ->formatStateUsing(fn ($state) => $state->getLabel())
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('borrowRequest.log_at')
                     ->label('Delivered At')
                     ->date('d M Y')
                     ->sortable(),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('borrowRequest.log_at', 'asc');
     }
 }
