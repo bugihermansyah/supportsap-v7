@@ -59,4 +59,24 @@ class User extends Authenticatable implements FilamentUser, Commenter
     {
         return null;
     }
+
+    public function reportings(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Reporting::class, 'reporting_users', 'user_id', 'reporting_id');
+    }
+
+    public function reportingUsers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ReportingUser::class, 'user_id');
+    }
+
+    public function outstandings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Outstanding::class, 'user_id');
+    }
+
+    public function borrowRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(BorrowRequest::class, 'requester_id');
+    }
 }
