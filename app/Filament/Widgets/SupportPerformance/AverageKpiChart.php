@@ -15,6 +15,7 @@ class AverageKpiChart extends ChartWidget
     protected ?string $heading = 'Average KPI Trend';
     protected static ?int $sort = 4;
     protected int | string | array $columnSpan = 'full';
+    protected ?string $maxHeight = '250px';
 
     protected function getData(): array
     {
