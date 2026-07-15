@@ -12,6 +12,7 @@ class AverageKpiChart extends ChartWidget
 {
     use InteractsWithPageFilters;
 
+    protected static bool $isDiscovered = false;
     protected ?string $heading = 'Average KPI Trend';
     protected static ?int $sort = 4;
     protected int | string | array $columnSpan = 'full';

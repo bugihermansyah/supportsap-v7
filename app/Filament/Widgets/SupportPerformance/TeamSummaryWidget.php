@@ -17,6 +17,7 @@ class TeamSummaryWidget extends StatsOverviewWidget
 {
     use InteractsWithPageFilters;
 
+    protected static bool $isDiscovered = false;
     protected static ?int $sort = 1;
 
     // Cache the widget for 30 seconds as per point 20

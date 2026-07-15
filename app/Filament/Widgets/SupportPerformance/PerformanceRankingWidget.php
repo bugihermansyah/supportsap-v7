@@ -16,6 +16,7 @@ class PerformanceRankingWidget extends BaseWidget
 {
     use InteractsWithPageFilters;
 
+    protected static bool $isDiscovered = false;
     protected static ?int $sort = 3;
 
     protected int | string | array $columnSpan = 'full';

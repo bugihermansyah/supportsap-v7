@@ -16,6 +16,7 @@ class EngineerGridWidget extends Widget
 {
     use InteractsWithPageFilters;
 
+    protected static bool $isDiscovered = false;
     protected string $view = 'filament.widgets.support-performance.engineer-grid-widget';
     protected static ?int $sort = 2;
     
