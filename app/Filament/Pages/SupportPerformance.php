@@ -12,10 +12,12 @@ use Filament\Schemas\Components\Section;
 use Filament\Forms\Form;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Pages\Dashboard\Concerns\HasFiltersForm;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 
 class SupportPerformance extends BaseDashboard
 {
     use HasFiltersForm;
+    use HasPageShield;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Main';
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar-square';
