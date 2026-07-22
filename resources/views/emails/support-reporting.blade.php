@@ -29,22 +29,15 @@
 <td style="padding: 2px 0; color: #6b7280; width: 140px; vertical-align: top;">Info Date:</td>
 <td style="padding: 2px 0;">{{ $outstanding?->date_in ? \Carbon\Carbon::parse($outstanding->date_in)->translatedFormat('d M Y') : '-' }}</td>
 </tr>
-@if(!isset($excludeWorkTime) || $excludeWorkTime)
-<tr>
-<td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Visit Date:</td>
-<td style="padding: 2px 0;">{{ $reporting->date_visit ? \Carbon\Carbon::parse($reporting->date_visit)->translatedFormat('d M Y') : '-' }}</td>
-</tr>
-@endif
-@if(isset($excludeWorkTime) && !$excludeWorkTime)
+    
 <tr>
 <td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Arrival:</td>
-<td style="padding: 2px 0;">{{ $reporting->start_work ? \Carbon\Carbon::parse($reporting->start_work)->format('d M Y H:i') : '-' }}</td>
+<td style="padding: 2px 0;">{{ ($reportingEmail?->start_work ?? $reporting->start_work) ? \Carbon\Carbon::parse($reportingEmail?->start_work ?? $reporting->start_work)->format('d M Y H:i') : '-' }}</td>
 </tr>
 <tr>
 <td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Departure:</td>
-<td style="padding: 2px 0;">{{ $reporting->end_work ? \Carbon\Carbon::parse($reporting->end_work)->format('d M Y H:i') : '-' }}</td>
+<td style="padding: 2px 0;">{{ ($reportingEmail?->end_work ?? $reporting->end_work) ? \Carbon\Carbon::parse($reportingEmail?->end_work ?? $reporting->end_work)->format('d M Y H:i') : '-' }}</td>
 </tr>
-@endif
 <tr>
 <td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Support:</td>
 <td style="padding: 2px 0;">{{ $users->pluck('name')->join(', ') ?: '-' }} / {{ ucfirst($reporting->work ?? '-') }}</td>
@@ -64,16 +57,16 @@
 </tr>
 <tr>
 <td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Reason:</td>
-<td style="padding: 2px 0;">{{ $reporting->cause ?? '-' }}</td>
+<td style="padding: 2px 0;">{{ $reportingEmail?->cause ?? $reporting->cause ?? '-' }}</td>
 </tr>
 <tr>
 <td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Action:</td>
-<td style="padding: 2px 0;"><div class="content-html">{!! $reporting->action ?? '-' !!}</div></td>
+<td style="padding: 2px 0;"><div class="content-html">{!! $reportingEmail?->action ?? $reporting->action ?? '-' !!}</div></td>
 </tr>
-@if($reporting->note)
+@if($reportingEmail?->note ?? $reporting->note)
 <tr>
 <td style="padding: 2px 0; color: #6b7280; vertical-align: top;">Note:</td>
-<td style="padding: 2px 0;"><div class="content-html">{!! $reporting->note !!}</div></td>
+<td style="padding: 2px 0;"><div class="content-html">{!! $reportingEmail?->note ?? $reporting->note !!}</div></td>
 </tr>
 @endif
 </table>

@@ -6,6 +6,8 @@ use App\Filament\Resources\Support\SupportReportings\SupportReportingResource;
 use App\Mail\SupportReportingMail;
 use App\Models\Customer;
 use App\Models\Reporting;
+use App\Models\ReportingEmail;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
@@ -22,12 +24,17 @@ use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Filament\Tables;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 use Illuminate\Support\Facades\Mail;
 
-class SendEmailReporting extends Page implements HasForms
+class SendEmailReporting extends Page implements HasForms, HasTable
 {
     use InteractsWithRecord;
     use InteractsWithForms;
+    use InteractsWithTable;
 
     protected static string $resource = SupportReportingResource::class;
 
@@ -40,9 +47,18 @@ class SendEmailReporting extends Page implements HasForms
         $this->record = $this->resolveRecord($record);
         $this->record->load(['outstanding.location.team', 'outstanding.location.company', 'users']);
 
-        // Use the email values previously saved in this reporting for client emails
-        $emailTo = $this->record->email_to ?? [];
-        $emailCc = $this->record->email_cc ?? [];
+        // Fetch email_to and email_cc from the location's customers pivot
+        $location = $this->record->outstanding?->location;
+
+        $emailTo = $location ? $location->customers()
+            ->wherePivot('is_to', true)
+            ->pluck('email')
+            ->toArray() : [];
+
+        $emailCc = $location ? $location->customers()
+            ->wherePivot('is_to', false)
+            ->pluck('email')
+            ->toArray() : [];
 
         $this->form->fill([
             'cause' => $this->record->cause,
@@ -52,7 +68,6 @@ class SendEmailReporting extends Page implements HasForms
             'email_cc' => $emailCc,
             'start_work' =>$this->record->start_work,
             'end_work' =>$this->record->end_work,
-            'exclude_work_time' => true,
         ]);
     }
 
@@ -115,19 +130,12 @@ class SendEmailReporting extends Page implements HasForms
                                     ->label('Email CC')
                                     ->multiple()
                                     ->options(Customer::all()->pluck('name_email', 'email')),
-                                Checkbox::make('exclude_work_time')
-                                    ->label('Disable Work Time')
-                                    ->default(true)
-                                    ->columnSpanFull()
-                                    ->live(),
                                 DateTimePicker::make('start_work')
                                     ->label('Start Work')
-                                    ->required()
-                                    ->hidden(fn (Get $get): bool => (bool) $get('exclude_work_time')),
+                                    ->required(),
                                 DateTimePicker::make('end_work')
                                     ->label('End Work')
                                     ->required()
-                                    ->hidden(fn (Get $get): bool => (bool) $get('exclude_work_time')),
                             ])
                             ->columns(2),
                         Section::make('Detail Aksi')
@@ -182,6 +190,29 @@ class SendEmailReporting extends Page implements HasForms
             ->columns(4);
     }
 
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(ReportingEmail::query()->where('reporting_id', $this->record->id))
+            ->columns([
+                Tables\Columns\TextColumn::make('send_mail_at')
+                    ->label('Terkirim Pada')
+                    ->dateTime('d M Y H:i'),
+                Tables\Columns\TextColumn::make('email_to')
+                    ->label('Email To')
+                    ->formatStateUsing(fn ($state) => is_array($state) ? implode(', ', $state) : $state),
+                Tables\Columns\TextColumn::make('email_cc')
+                    ->label('Email CC')
+                    ->formatStateUsing(fn ($state) => is_array($state) ? implode(', ', $state) : $state),
+            ])
+            ->headerActions([
+                Action::make('refresh')
+                    ->label('Refresh')
+                    ->icon('heroicon-o-arrow-path')
+                    ->action(fn () => $this->resetTable()),
+            ]);
+    }
+
     public function send(): void
     {
         $data = $this->form->getState();
@@ -189,7 +220,6 @@ class SendEmailReporting extends Page implements HasForms
         
         $emailTo = $data['email_to'] ?? [];
         $emailCc = $data['email_cc'] ?? [];
-        $excludeWorkTime = $data['exclude_work_time'] ?? true;
 
         if (empty($emailTo)) {
             Notification::make()
@@ -200,9 +230,6 @@ class SendEmailReporting extends Page implements HasForms
             return;
         }
 
-        // Save attachments (and any other form relationships)
-        $this->form->model($reporting)->saveRelationships();
-
         // Update the reporting record with edited form data
         $reporting->update([
             'cause' => $data['cause'] ?? $reporting->cause,
@@ -211,9 +238,34 @@ class SendEmailReporting extends Page implements HasForms
             'start_work' => $data['start_work'] ?? $reporting->start_work,
             'end_work' => $data['end_work'] ?? $reporting->end_work,
             'send_mail_at' => $reporting->send_mail_at ?? now(),
+        ]);
+
+        $reportingEmail = ReportingEmail::create([
+            'reporting_id' => $reporting->id,
+            'cause' => $data['cause'] ?? $reporting->cause,
+            'action' => $data['action'] ?? $reporting->action,
+            'note' => $data['note'] ?? $reporting->note,
+            'start_work' => $data['start_work'] ?? $reporting->start_work,
+            'end_work' => $data['end_work'] ?? $reporting->end_work,
             'email_to' => $emailTo,
             'email_cc' => $emailCc,
+            'send_mail_at' => now(),
         ]);
+
+        // Copy existing attachments or add new ones
+        foreach ($data['attachments'] ?? [] as $attachment) {
+            if (is_string($attachment)) {
+                $media = \Spatie\MediaLibrary\MediaCollections\Models\Media::findByUuid($attachment);
+                if ($media) {
+                    $reportingEmail->copyMedia($media->getPath())->toMediaCollection('attachments');
+                }
+            } elseif ($attachment instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+                $reportingEmail->addMedia($attachment->getRealPath())
+                    ->usingName($attachment->getClientOriginalName())
+                    ->usingFileName($attachment->getClientOriginalName())
+                    ->toMediaCollection('attachments');
+            }
+        }
 
         $reporting->load(['outstanding.location.team', 'outstanding.location.company', 'users', 'media']);
 
@@ -222,7 +274,7 @@ class SendEmailReporting extends Page implements HasForms
             $mail->cc($emailCc);
         }
 
-        $mail->queue(new SupportReportingMail($reporting, false, $excludeWorkTime));
+        $mail->queue(new SupportReportingMail($reportingEmail, false));
 
         Notification::make()
             ->title('Email berhasil dikirim!')

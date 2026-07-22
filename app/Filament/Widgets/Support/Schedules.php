@@ -57,21 +57,20 @@ class Schedules extends TableWidget
                     ->icon('heroicon-m-map-pin')
                     ->button()
                     ->size('sm')
-                    ->disabled(fn($record) => empty($record->outstanding?->location?->latitude) || empty($record->outstanding?->location?->longitude))
+                    ->disabled(fn($record) => empty($record->outstanding?->location?->lat) || empty($record->outstanding?->location?->lng))
                     ->tooltip('View on Google Maps')
                     ->color('success')
                     ->url(function ($record) {
                         $location = $record->outstanding?->location;
 
-                        // Jika latitude atau longitude kosong/null, jangan buat URL
                         if (
-                            empty($location?->latitude) ||
-                            empty($location?->longitude)
+                            empty($location?->lat) ||
+                            empty($location?->lng)
                         ) {
-                            return null; // atau '#' jika ingin tetap jadi link mati
+                            return null; 
                         }
 
-                        return "https://www.google.com/maps/search/?api=1&query={$location->latitude},{$location->longitude}";
+                        return "https://www.google.com/maps/search/?api=1&query={$location->lat},{$location->lng}";
                     })
                     ->openUrlInNewTab(),
                 Action::make('start')

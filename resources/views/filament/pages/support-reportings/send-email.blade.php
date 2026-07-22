@@ -12,4 +12,9 @@
             </x-filament::button>
         </div>
     </form>
+
+    <div class="mt-8">
+        <h3 class="text-lg font-medium mb-4">Riwayat Pengiriman Email</h3>
+        {{ $this->table }}
+    </div>
 </x-filament-panels::page>

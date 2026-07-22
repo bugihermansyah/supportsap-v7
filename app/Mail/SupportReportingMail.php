@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Reporting;
+use App\Models\ReportingEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
@@ -14,14 +15,23 @@ class SupportReportingMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public Reporting $reporting;
+    public ?ReportingEmail $reportingEmail = null;
+
     /**
      * Create a new message instance.
      */
     public function __construct(
-        public Reporting $reporting,
+        Reporting|ReportingEmail $mailData,
         public bool $isInternal = true,
-        public bool $excludeWorkTime = true,
-    ) {}
+    ) {
+        if ($mailData instanceof ReportingEmail) {
+            $this->reportingEmail = $mailData;
+            $this->reporting = $mailData->reporting;
+        } else {
+            $this->reporting = $mailData;
+        }
+    }
 
     /**
      * Get the message envelope.
@@ -48,12 +58,12 @@ class SupportReportingMail extends Mailable
         return new Content(
             markdown: 'emails.support-reporting',
             with: [
+                'reportingEmail' => $this->reportingEmail,
                 'reporting' => $this->reporting,
                 'outstanding' => $this->reporting->outstanding,
                 'location' => $this->reporting->outstanding?->location,
                 'team' => $this->reporting->outstanding?->location?->team,
                 'users' => $this->reporting->users,
-                'excludeWorkTime' => $this->excludeWorkTime,
             ],
         );
     }
@@ -65,8 +75,11 @@ class SupportReportingMail extends Mailable
      */
     public function attachments(): array
     {
-        return $this->reporting
-            ->getMedia('attachments')
+        $mediaCollection = $this->reportingEmail
+            ? $this->reportingEmail->getMedia('attachments')
+            : $this->reporting->getMedia('attachments');
+
+        return $mediaCollection
             ->map(fn ($media) => Attachment::fromPath($media->getPath())
                 ->as($media->file_name)
                 ->withMime($media->mime_type)
