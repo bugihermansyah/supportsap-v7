@@ -5,6 +5,7 @@ namespace App\Filament\Resources\ReportingEmails;
 use App\Filament\Resources\ReportingEmails\Pages\ManageReportingEmails;
 use App\Models\ReportingEmail;
 use BackedEnum;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -21,6 +22,8 @@ use Filament\Tables\Table;
 
 class ReportingEmailResource extends Resource
 {
+    use HasPageShield;
+    
     protected static ?string $model = ReportingEmail::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPaperAirplane;
