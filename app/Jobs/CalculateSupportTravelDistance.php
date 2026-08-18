@@ -60,6 +60,20 @@ class CalculateSupportTravelDistance implements ShouldQueue
                 continue;
             }
 
+            // Skip distance calculation for out-of-town locations (area_status = 'out')
+            $destLocation = $reporting->outstanding?->location;
+            $isOutOfTown = $destLocation && $destLocation->area_status === 'out';
+
+            if ($isOutOfTown) {
+                $reportingUser->update([
+                    'distance' => 0,
+                    'duration' => 0,
+                    'origin_name' => 'Luar Kota',
+                    'dest_name' => $reporting->location_title,
+                ]);
+                continue;
+            }
+
             // Find previous reporting on the same day for this user
             $dateVisit = $reporting->date_visit;
 

@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Warehouses;
 use App\Filament\Resources\Warehouses\Pages\CreateWarehouse;
 use App\Filament\Resources\Warehouses\Pages\EditWarehouse;
 use App\Filament\Resources\Warehouses\Pages\ListWarehouses;
+use App\Filament\Resources\Warehouses\RelationManagers\MovementsRelationManager;
+use App\Filament\Resources\Warehouses\RelationManagers\UnitsRelationManager;
 use App\Filament\Resources\Warehouses\Schemas\WarehouseForm;
 use App\Filament\Resources\Warehouses\Tables\WarehousesTable;
 use App\Models\Warehouse;
@@ -19,7 +21,7 @@ class WarehouseResource extends Resource
 {
     protected static ?string $model = Warehouse::class;
 
-    protected static string | UnitEnum | null $navigationGroup = 'Main';
+    protected static string|UnitEnum|null $navigationGroup = 'Main';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingStorefront;
 
@@ -38,7 +40,8 @@ class WarehouseResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            UnitsRelationManager::class,
+            MovementsRelationManager::class,
         ];
     }
 

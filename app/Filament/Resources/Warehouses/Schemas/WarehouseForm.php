@@ -2,8 +2,9 @@
 
 namespace App\Filament\Resources\Warehouses\Schemas;
 
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
 class WarehouseForm
@@ -16,10 +17,10 @@ class WarehouseForm
                     ->required(),
                 Textarea::make('address')
                     ->columnSpanFull(),
-                TextInput::make('use_stock')
-                    ->required()
-                    ->numeric()
-                    ->default(1),
+                Toggle::make('use_stock')
+                    ->label('Catat stok')
+                    ->helperText('Aktif = gudang internal support; stok dicatat dan request lewat menu Stock Request. Nonaktif = gudang logistik eksternal (Borrow Request).')
+                    ->default(true),
             ]);
     }
 }

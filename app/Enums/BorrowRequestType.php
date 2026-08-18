@@ -16,10 +16,10 @@ enum BorrowRequestType: string implements HasColor, HasLabel, HasIcon
     public function getLabel(): string
     {
         return match ($this) {
-            self::Borrow => 'Borrow',
-            self::Replacement => 'Replacement',
+            self::Borrow => 'Peminjaman',
+            self::Replacement => 'Penggantian',
             self::Backup => 'Backup',
-            self::PullRequest => 'Pull Request',
+            self::PullRequest => 'Penarikan Service',
         };
     }
 
