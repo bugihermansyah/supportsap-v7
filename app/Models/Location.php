@@ -9,6 +9,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property string $id
+ * @property string $name
+ * @property string|null $team_id
+ * @property string|null $area_status
+ * @property bool $is_ho
+ * @property-read string $full_name
+ */
 class Location extends Model
 {
     use HasUlids;
@@ -19,7 +27,7 @@ class Location extends Model
             'status' => LocationStatus::class,
             'is_ho' => 'boolean',
             'email_to' => 'array',
-            'email_cc' => 'array'
+            'email_cc' => 'array',
         ];
     }
 
@@ -45,7 +53,7 @@ class Location extends Model
 
     public function getFullNameAttribute(): string
     {
-        return "{$this->name} - " . ($this->company?->alias ?? 'N/A');
+        return "{$this->name} - ".($this->company?->alias ?? 'N/A');
     }
 
     public function getAreaLabelAttribute(): string

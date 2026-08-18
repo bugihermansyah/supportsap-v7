@@ -3,32 +3,41 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Traits\HasUserHelpers;
 use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Permission\Traits\HasRoles;
-use App\Traits\HasUserHelpers;
 use NotificationChannels\WebPush\HasPushSubscriptions;
+use Spatie\Permission\Traits\HasRoles;
 use Tilto\Commentable\Contracts\Commenter;
 use Tilto\Commentable\Traits\IsCommenter;
 
-class User extends Authenticatable implements FilamentUser, Commenter
+/**
+ * @property string $id
+ * @property string $name
+ * @property string|null $team_id
+ * @property int $status
+ */
+class User extends Authenticatable implements Commenter, FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory;
-    use HasUuids;
-    use HasUserHelpers;
-    use HasPushSubscriptions;
 
     use HasPanelShield;
+    use HasPushSubscriptions;
     use HasRoles;
-    use Notifiable;
+    use HasUserHelpers;
+    use HasUuids;
     use IsCommenter;
+    use Notifiable;
 
     protected $hidden = [
         'password',
@@ -50,7 +59,7 @@ class User extends Authenticatable implements FilamentUser, Commenter
         return $this->hasOne(UserProfile::class);
     }
 
-    public function canAccessPanel(\Filament\Panel $panel): bool
+    public function canAccessPanel(Panel $panel): bool
     {
         return $this->status != 0;
     }
@@ -60,22 +69,22 @@ class User extends Authenticatable implements FilamentUser, Commenter
         return null;
     }
 
-    public function reportings(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function reportings(): BelongsToMany
     {
         return $this->belongsToMany(Reporting::class, 'reporting_users', 'user_id', 'reporting_id');
     }
 
-    public function reportingUsers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function reportingUsers(): HasMany
     {
         return $this->hasMany(ReportingUser::class, 'user_id');
     }
 
-    public function outstandings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function outstandings(): HasMany
     {
         return $this->hasMany(Outstanding::class, 'user_id');
     }
 
-    public function borrowRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function borrowRequests(): HasMany
     {
         return $this->hasMany(BorrowRequest::class, 'requester_id');
     }
