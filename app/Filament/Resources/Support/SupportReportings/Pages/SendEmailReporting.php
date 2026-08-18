@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Support\SupportReportings\Pages;
 
+use Alsaloul\ImageGallery\Infolists\Entries\ImageGalleryEntry;
 use App\Enums\ReportStatus;
 use App\Filament\Resources\Support\SupportReportings\SupportReportingResource;
 use App\Mail\SupportReportingMail;
@@ -181,26 +182,45 @@ class SendEmailReporting extends Page implements HasForms, HasTable
 
                     ])
                     ->columnSpan(2),
-                Section::make('Attachment')
+                Group::make()
                     ->schema([
-                        SpatieMediaLibraryFileUpload::make('attachments')
-                            ->hiddenLabel()
-                            ->image()
-                            ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png'])
-                            ->multiple()
-                            ->maxSize(10240)
-                            ->optimize('jpg', 75)
-                            ->resize(75)
-                            ->imageEditor()
-                            ->panelLayout('grid')
-                            ->openable()
-                            ->collection('attachments')
-                            ->downloadable()
-                            ->maxImageWidth(1360)
-                            // ->maxImageHeight(1080)
-                            ->maxFiles(10)
-                            ->preserveFilenames()
-                            ->columnSpanFull(),
+                        Section::make('Attachment')
+                            ->schema([
+                                SpatieMediaLibraryFileUpload::make('attachments')
+                                    ->hiddenLabel()
+                                    ->image()
+                                    ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png'])
+                                    ->multiple()
+                                    ->maxSize(10240)
+                                    ->optimize('jpg', 75)
+                                    ->resize(75)
+                                    ->imageEditor()
+                                    ->panelLayout('grid')
+                                    ->openable()
+                                    ->collection('attachments')
+                                    ->downloadable()
+                                    ->maxImageWidth(1360)
+                                    // ->maxImageHeight(1080)
+                                    ->maxFiles(10)
+                                    ->preserveFilenames()
+                                    ->columnSpanFull(),
+                            ]),
+                        Section::make('Form Support')
+                            ->schema([
+                                ImageGalleryEntry::make('form_support')
+                                    ->hiddenLabel()
+                                    ->state(fn (): array => $this->getFormSupportUrls())
+                                    ->thumbWidth(120)
+                                    ->thumbHeight(120)
+                                    ->visible(fn (): bool => filled($this->getFormSupportUrls()))
+                                    ->columnSpanFull(),
+                                TextEntry::make('form_support_empty')
+                                    ->hiddenLabel()
+                                    ->state('Belum ada foto form support.')
+                                    ->color('gray')
+                                    ->visible(fn (): bool => blank($this->getFormSupportUrls()))
+                                    ->columnSpanFull(),
+                            ]),
                     ])
                     ->columnSpan(1),
             ])
@@ -216,6 +236,19 @@ class SendEmailReporting extends Page implements HasForms, HasTable
         }
 
         return $record;
+    }
+
+    /**
+     * URL foto pada media collection "form_support" (lihat SupportReportingForm).
+     *
+     * @return array<int, string>
+     */
+    protected function getFormSupportUrls(): array
+    {
+        return $this->reporting()
+            ->getMedia('form_support')
+            ->map(fn (Media $media): string => $media->getUrl())
+            ->all();
     }
 
     protected function normalizeStatus(mixed $state): ?ReportStatus
