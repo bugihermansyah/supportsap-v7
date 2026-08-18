@@ -2,13 +2,14 @@
 
 namespace App\Filament\Resources\Support\SupportReportings\Pages;
 
+use App\Enums\ReportStatus;
 use App\Filament\Resources\Support\SupportReportings\SupportReportingResource;
 use App\Mail\SupportReportingMail;
 use App\Models\Customer;
 use App\Models\Reporting;
 use App\Models\ReportingEmail;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -29,11 +30,13 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Mail;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class SendEmailReporting extends Page implements HasForms, HasTable
 {
-    use InteractsWithRecord;
     use InteractsWithForms;
+    use InteractsWithRecord;
     use InteractsWithTable;
 
     protected static string $resource = SupportReportingResource::class;
@@ -66,8 +69,10 @@ class SendEmailReporting extends Page implements HasForms, HasTable
             'note' => $this->record->note,
             'email_to' => $emailTo,
             'email_cc' => $emailCc,
-            'start_work' =>$this->record->start_work,
-            'end_work' =>$this->record->end_work,
+            'start_work' => $this->record->start_work,
+            'end_work' => $this->record->end_work,
+            'status' => $this->record->status?->value,
+            'revisit' => $this->record->revisit,
         ]);
     }
 
@@ -105,16 +110,28 @@ class SendEmailReporting extends Page implements HasForms, HasTable
                             ->formatStateUsing(fn (string $state): string => ucfirst($state)),
                         TextEntry::make('users.firstname')
                             ->label('Support'),
-                        TextEntry::make('status')
+                        Select::make('status')
                             ->label('Status')
-                            ->badge(),
+                            ->options(ReportStatus::class)
+                            ->native(false)
+                            ->selectablePlaceholder(false)
+                            ->live()
+                            ->disabled(fn (): bool => $this->isStatusLocked())
+                            ->helperText(fn (): ?string => $this->reporting()->outstanding?->location?->is_ho
+                                ? 'Lokasi HO — status terkunci Finish.'
+                                : null)
+                            ->afterStateUpdated(fn ($state) => $this->saveStatus($state)),
+                        DatePicker::make('revisit')
+                            ->label('Revisit')
+                            ->placeholder('Date next target')
+                            ->native(true)
+                            ->live(onBlur: true)
+                            ->disabled(fn (): bool => $this->isStatusLocked())
+                            ->visible(fn (Get $get): bool => $this->normalizeStatus($get('status')) !== ReportStatus::Finish)
+                            ->afterStateUpdated(fn ($state) => $this->saveRevisit($state)),
                         TextEntry::make('send_mail_at')
                             ->label('Send Mail At')
                             ->date('d M Y'),
-                        TextEntry::make('revisit')
-                            ->label('Revisit')
-                            ->date('d M Y')
-                            ->visible(fn (Reporting $record): bool => filled($record->revisit)),
                     ])
                     ->columnSpan(1),
                 Group::make()
@@ -135,7 +152,7 @@ class SendEmailReporting extends Page implements HasForms, HasTable
                                     ->required(),
                                 DateTimePicker::make('end_work')
                                     ->label('End Work')
-                                    ->required()
+                                    ->required(),
                             ])
                             ->columns(2),
                         Section::make('Detail Aksi')
@@ -161,33 +178,102 @@ class SendEmailReporting extends Page implements HasForms, HasTable
                                         'orderedList',
                                     ]),
                             ]),
-                    
-                        ])
-                        ->columnSpan(2),
-                    Section::make('Attachment')
-                        ->schema([
-                                SpatieMediaLibraryFileUpload::make('attachments')
-                                    ->hiddenLabel()
-                                    ->image()
-                                    ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png'])
-                                    ->multiple()
-                                    ->maxSize(10240)
-                                    ->optimize('jpg', 75)
-                                    ->resize(75)
-                                    ->imageEditor()
-                                    ->panelLayout('grid')
-                                    ->openable()
-                                    ->collection('attachments')
-                                    ->downloadable()
-                                    ->maxImageWidth(1360)
-                                    // ->maxImageHeight(1080)
-                                    ->maxFiles(10)
-                                    ->preserveFilenames()
-                                    ->columnSpanFull(),
-                        ])
-                        ->columnSpan(1),
+
+                    ])
+                    ->columnSpan(2),
+                Section::make('Attachment')
+                    ->schema([
+                        SpatieMediaLibraryFileUpload::make('attachments')
+                            ->hiddenLabel()
+                            ->image()
+                            ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png'])
+                            ->multiple()
+                            ->maxSize(10240)
+                            ->optimize('jpg', 75)
+                            ->resize(75)
+                            ->imageEditor()
+                            ->panelLayout('grid')
+                            ->openable()
+                            ->collection('attachments')
+                            ->downloadable()
+                            ->maxImageWidth(1360)
+                            // ->maxImageHeight(1080)
+                            ->maxFiles(10)
+                            ->preserveFilenames()
+                            ->columnSpanFull(),
+                    ])
+                    ->columnSpan(1),
             ])
             ->columns(4);
+    }
+
+    protected function reporting(): Reporting
+    {
+        $record = $this->record;
+
+        if (! $record instanceof Reporting) {
+            throw new \LogicException('SendEmailReporting expects a Reporting record.');
+        }
+
+        return $record;
+    }
+
+    protected function normalizeStatus(mixed $state): ?ReportStatus
+    {
+        return $state instanceof ReportStatus
+            ? $state
+            : ReportStatus::tryFrom((string) $state);
+    }
+
+    /**
+     * Status lokasi HO dipaksa Finish (lihat EditSupportReporting::mutateFormDataBeforeSave).
+     */
+    protected function isStatusLocked(): bool
+    {
+        return (bool) $this->reporting()->outstanding?->location?->is_ho
+            || ! auth()->user()?->can('update', $this->reporting());
+    }
+
+    public function saveStatus(mixed $state): void
+    {
+        if ($this->isStatusLocked()) {
+            return;
+        }
+
+        $status = $this->normalizeStatus($state);
+
+        if (! $status) {
+            return;
+        }
+
+        $payload = ['status' => $status];
+
+        // Finish tidak punya next target; status lain wajib revisit (lihat SupportReportingForm).
+        if ($status === ReportStatus::Finish) {
+            $payload['revisit'] = null;
+            $this->data['revisit'] = null;
+        }
+
+        $this->reporting()->update($payload);
+
+        Notification::make()
+            ->title('Status disimpan: '.$status->getLabel())
+            ->success()
+            ->send();
+    }
+
+    public function saveRevisit(mixed $state): void
+    {
+        if ($this->isStatusLocked()) {
+            return;
+        }
+
+        $this->reporting()->update(['revisit' => filled($state) ? $state : null]);
+
+        Notification::make()
+            ->title(filled($state) ? 'Revisit disimpan.' : 'Revisit dikosongkan.')
+            ->success()
+            ->send();
     }
 
     public function table(Table $table): Table
@@ -217,7 +303,7 @@ class SendEmailReporting extends Page implements HasForms, HasTable
     {
         $data = $this->form->getState();
         $reporting = $this->record;
-        
+
         $emailTo = $data['email_to'] ?? [];
         $emailCc = $data['email_cc'] ?? [];
 
@@ -255,11 +341,11 @@ class SendEmailReporting extends Page implements HasForms, HasTable
         // Copy existing attachments or add new ones
         foreach ($data['attachments'] ?? [] as $attachment) {
             if (is_string($attachment)) {
-                $media = \Spatie\MediaLibrary\MediaCollections\Models\Media::findByUuid($attachment);
+                $media = Media::findByUuid($attachment);
                 if ($media) {
                     $reportingEmail->copyMedia($media->getPath())->toMediaCollection('attachments');
                 }
-            } elseif ($attachment instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+            } elseif ($attachment instanceof TemporaryUploadedFile) {
                 $reportingEmail->addMedia($attachment->getRealPath())
                     ->usingName($attachment->getClientOriginalName())
                     ->usingFileName($attachment->getClientOriginalName())
@@ -283,5 +369,4 @@ class SendEmailReporting extends Page implements HasForms, HasTable
 
         $this->redirect(SupportReportingResource::getUrl('index', ['record' => $reporting]));
     }
-
 }
