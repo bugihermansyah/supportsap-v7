@@ -67,7 +67,9 @@ class SupportReportingsTable
                     ->lineClamp(2)
                     ->html(),
                 TextColumn::make('status')
-                    ->badge(),
+                    ->badge()
+                    // Alasan pending ditempel di bawah badge supaya langsung terbaca.
+                    ->description(fn (Reporting $record) => $record->pending_reason?->getLabel()),
                 TextColumn::make('score')
                     ->badge()
                     ->formatStateUsing(fn ($state) => $state === null ? '-' : Reporting::getScoreGrade($state))
@@ -87,17 +89,17 @@ class SupportReportingsTable
                     ->options([
                         'client' => 'Client',
                         'preventif' => 'Preventive',
-                        'support' => 'Internal'
+                        'support' => 'Internal',
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query->when(
                             $data['value'],
                             fn (Builder $query, $value) => $query->whereHas(
-                                'outstanding', 
+                                'outstanding',
                                 fn (Builder $query) => $query->where('reporter', $value)
                             )
                         );
-                    })
+                    }),
             ])
             ->recordActions([
                 ViewAction::make()

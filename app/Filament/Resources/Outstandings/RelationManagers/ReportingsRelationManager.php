@@ -13,14 +13,15 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ReportingsRelationManager extends RelationManager
 {
@@ -41,8 +42,14 @@ class ReportingsRelationManager extends RelationManager
                     ->default('visit'),
                 DatePicker::make('date_visit')
                     ->required(),
-                Select::make('user_id')
-                    ->relationship('user', 'name', fn(\Illuminate\Database\Eloquent\Builder $query) => $query->where('status', '!=', 0)),
+                // Teknisi disimpan di pivot reporting_users (bisa lebih dari satu orang),
+                // bukan di kolom reportings.user_id yang sudah dipensiunkan.
+                Select::make('users')
+                    ->label('Support')
+                    ->relationship('users', 'name', fn (Builder $query) => $query->where('status', '!=', 0))
+                    ->multiple()
+                    ->preload()
+                    ->searchable(),
                 Toggle::make('status'),
                 DatePicker::make('revisit'),
                 Textarea::make('note')
@@ -73,7 +80,11 @@ class ReportingsRelationManager extends RelationManager
                 TextColumn::make('date_visit')
                     ->date()
                     ->sortable(),
-                TextColumn::make('user.name')
+                TextColumn::make('users.name')
+                    ->label('Support')
+                    ->badge()
+                    ->limitList(2)
+                    ->expandableLimitedList()
                     ->searchable(),
                 IconColumn::make('status')
                     ->boolean(),
@@ -97,10 +108,6 @@ class ReportingsRelationManager extends RelationManager
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('deleted_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

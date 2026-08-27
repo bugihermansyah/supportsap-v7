@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Support\SupportReportings\Schemas;
 
 use App\Enums\OutstandingTypeProblem;
+use App\Enums\PendingReason;
 use App\Enums\ReportStatus;
 use App\Models\Unit;
 use Carbon\Carbon;
@@ -39,7 +40,7 @@ class SupportReportingForm
                                 ->native(false)
                                 ->prefix('Action')
                                 ->columnSpanFull()
-                                ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
+                                ->hidden(fn (?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
                                 ->required(),
                             ToggleButtons::make('work')
                                 ->label('Action Type')
@@ -47,14 +48,14 @@ class SupportReportingForm
                                 ->hiddenLabel()
                                 ->options([
                                     'visit' => 'Visit',
-                                    'remote' => 'Remote'
+                                    'remote' => 'Remote',
                                 ])
                                 ->colors([
                                     'visit' => 'info',
                                     'remote' => 'warning',
                                 ])
                                 ->default('visit')
-                                ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
+                                ->hidden(fn (?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
                                 ->grouped()
                                 ->required(),
                             TextInput::make('cause')
@@ -76,7 +77,7 @@ class SupportReportingForm
                                 ]),
                             RichEditor::make('note')
                                 ->label('Note')
-                                ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
+                                ->hidden(fn (?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
                                 ->toolbarButtons([
                                     'bold',
                                     'bulletList',
@@ -89,21 +90,31 @@ class SupportReportingForm
                                 ->columnSpanFull(),
                         ]),
                     Step::make('Statuss')
-                        ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
+                        ->hidden(fn (?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
                         ->schema([
                             ToggleButtons::make('status')
                                 ->inline()
                                 ->live()
                                 ->options(ReportStatus::class)
                                 ->helperText(new HtmlString('Jika selain <strong>Finish</strong> wajib isi next target'))
-                                ->required(fn(?Model $record) => !($record?->outstanding?->location?->is_ho ?? false)),
+                                ->required(fn (?Model $record) => ! ($record?->outstanding?->location?->is_ho ?? false)),
+                            // Pending SAP / Pending Client wajib menyertakan alasannya.
+                            Select::make('pending_reason')
+                                ->label('Alasan pending')
+                                ->options(PendingReason::class)
+                                ->native(false)
+                                ->visible(fn (Get $get) => PendingReason::isRequiredFor($get('status')))
+                                ->required(fn (Get $get) => PendingReason::isRequiredFor($get('status')))
+                                ->columnSpanFull(),
                             DatePicker::make('revisit')
                                 ->label('Revisit')
                                 ->hiddenLabel()
                                 ->placeholder('Date next target')
                                 ->requiredIf('status', ['0', '2', '3', '4'])
                                 ->hidden(function (Get $get, ?Model $record) {
-                                    if ($record?->outstanding?->location?->is_ho) return true;
+                                    if ($record?->outstanding?->location?->is_ho) {
+                                        return true;
+                                    }
 
                                     $status = $get('status');
 
@@ -118,15 +129,15 @@ class SupportReportingForm
                                 ->label('Problem Type')
                                 ->hiddenLabel()
                                 ->helperText(new HtmlString('Setiap <strong>tipe problem</strong> wajib menyertakan kerusakan unit'))
-                                ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
-                                ->required(fn(?Model $record) => !($record?->outstanding?->location?->is_ho ?? false))
+                                ->hidden(fn (?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
+                                ->required(fn (?Model $record) => ! ($record?->outstanding?->location?->is_ho ?? false))
                                 ->options(OutstandingTypeProblem::class)
-                                ->formatStateUsing(fn(Model $record) => $record->outstanding->is_type_problem ?? 'NON')
+                                ->formatStateUsing(fn (Model $record) => $record->outstanding->is_type_problem ?? 'NON')
                                 ->inline(),
                             Placeholder::make('table_repeater_style')
                                 ->hiddenLabel()
-                                ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
-                                ->content(new \Illuminate\Support\HtmlString('
+                                ->hidden(fn (?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
+                                ->content(new HtmlString('
                                     <style>
                                         .force-table-repeater > table { display: table !important; width: 100% !important; }
                                         .force-table-repeater > table > thead { display: table-header-group !important; }
@@ -144,7 +155,7 @@ class SupportReportingForm
                             Repeater::make('outstandingUnits')
                                 ->label('Unit')
                                 ->hiddenLabel()
-                                ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
+                                ->hidden(fn (?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
                                 ->relationship()
                                 ->extraAttributes(['class' => 'force-table-repeater'])
                                 ->reorderable(false)
@@ -182,7 +193,7 @@ class SupportReportingForm
                             Group::make([
                                 SpatieMediaLibraryFileUpload::make('attachments')
                                     ->label('Photos')
-                                    ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
+                                    ->hidden(fn (?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
                                     ->image()
                                     ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png'])
                                     ->multiple()
@@ -202,7 +213,7 @@ class SupportReportingForm
                                     ->preserveFilenames(),
                                 SpatieMediaLibraryFileUpload::make('form_support')
                                     ->label('Form Support')
-                                    ->hidden(fn(?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
+                                    ->hidden(fn (?Model $record) => $record?->outstanding?->location?->is_ho ?? false)
                                     ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png'])
                                     ->maxSize(10240)
                                     // ->panelLayout('grid')
@@ -228,7 +239,7 @@ class SupportReportingForm
                             //     ->columns(2)
                             //     ->collapsible(),
                         ]),
-                ])
+                ]),
             ]);
     }
 }

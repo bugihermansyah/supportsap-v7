@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\PendingReason;
+use App\Enums\ReportingState;
 use App\Enums\ReportStatus;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -23,8 +26,12 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string|null $solution
  * @property string $work
  * @property string $date_visit
- * @property string|null $user_id
- * @property ReportStatus|null $status
+ * @property ReportStatus|null $status hasil laporan; null selama belum dilaporkan
+ * @property PendingReason|null $pending_reason wajib saat status Pending SAP / Pending Client
+ * @property ReportingState $state tahap hidup baris ini
+ * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property string|null $cancel_reason
+ * @property string|null $cancelled_by
  * @property string|null $revisit
  * @property string|null $note
  * @property string|null $signature
@@ -34,8 +41,10 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property \Illuminate\Support\Carbon|null $user_created_at
  * @property array|null $email_to
  * @property array|null $email_cc
- * @property int|null $score
+ * @property int|null $score null selama baris ini masih berupa jadwal
  * @property string|null $evaluation_note
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Outstanding|null $outstanding
  * @property-read Collection<int, User> $users
  * @property-read string $location_title
@@ -45,12 +54,20 @@ class Reporting extends Model implements HasMedia
     use HasUlids;
     use InteractsWithMedia;
 
+    /** Baris baru selalu lahir sebagai jadwal. */
+    protected $attributes = [
+        'state' => 'scheduled',
+    ];
+
     protected function casts(): array
     {
         return [
             'status' => ReportStatus::class,
+            'pending_reason' => PendingReason::class,
+            'state' => ReportingState::class,
             'email_to' => 'array',
             'email_cc' => 'array',
+            'cancelled_at' => 'datetime',
         ];
     }
 
@@ -59,10 +76,9 @@ class Reporting extends Model implements HasMedia
         return $this->belongsToMany(User::class, 'reporting_users', 'reporting_id', 'user_id');
     }
 
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'user_id', 'id');
-    }
+    // Relasi user() dihapus: teknisi selalu dibaca dari pivot reporting_users
+    // lewat users() / reportingUsers(). Kolom reportings.user_id dipensiunkan
+    // (lihat database/sql/2026_08_27_reportings_drop_user_id.sql).
 
     public function outstanding(): BelongsTo
     {
@@ -84,10 +100,57 @@ class Reporting extends Model implements HasMedia
         return "{$this->outstanding?->location?->name} - ".($this->outstanding?->title);
     }
 
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
+    }
+
+    /** Jadwal yang masih menunggu dikerjakan (belum dilaporkan, belum dibatalkan). */
+    public function scopeOpenSchedule(Builder $query): Builder
+    {
+        return $query->whereIn('state', [ReportingState::Scheduled, ReportingState::InProgress]);
+    }
+
+    public function scopeReported(Builder $query): Builder
+    {
+        return $query->where('state', ReportingState::Reported);
+    }
+
+    /**
+     * Batalkan jadwal: barisnya tetap tersimpan sebagai riwayat, tapi keluar dari
+     * daftar kerja support dan tidak ikut dinilai KPI.
+     */
+    public function cancel(string $reason, ?string $userId = null): void
+    {
+        $this->forceFill([
+            'state' => ReportingState::Cancelled,
+            'cancelled_at' => now(),
+            'cancel_reason' => $reason,
+            'cancelled_by' => $userId ?? auth()->id(),
+            'score' => null,
+        ])->save();
+    }
+
     protected static function booted()
     {
         static::deleting(function (Reporting $reporting) {
             $reporting->reportingUsers()->delete();
+        });
+
+        // `state` selalu diturunkan dari data, jadi tidak ada tempat lain yang perlu
+        // mengisinya manual (kecuali pembatalan, lihat cancel()).
+        static::saving(function (Reporting $reporting) {
+            // Alasan pending hanya berlaku untuk Pending SAP / Pending Client.
+            if (! PendingReason::isRequiredFor($reporting->status)) {
+                $reporting->pending_reason = null;
+            }
+
+            $reporting->state = match (true) {
+                $reporting->status !== null => ReportingState::Reported,
+                $reporting->state === ReportingState::Cancelled => ReportingState::Cancelled,
+                $reporting->start_work !== null => ReportingState::InProgress,
+                default => ReportingState::Scheduled,
+            };
         });
 
         static::creating(function (Reporting $reporting) {
@@ -137,17 +200,21 @@ class Reporting extends Model implements HasMedia
     }
 
     /**
-     * Calculate automatic score based on reporting timeliness and completeness.
+     * Skor KPI baris ini, atau null bila baris ini belum berupa laporan.
+     *
+     * Baris tanpa `status` masih berupa jadwal kunjungan: belum ada pekerjaan yang
+     * bisa dinilai, jadi skornya null (bukan 0) supaya `avg('score')` di halaman KPI
+     * mengabaikannya, bukan menariknya turun.
      */
-    public function calculateAutoScore(): int
+    public function calculateAutoScore(): ?int
     {
+        if (! $this->status) {
+            return null;
+        }
+
         // If this is an HO visit, return a default perfect score of 100 without penalties
         if ($this->outstanding?->location?->is_ho) {
             return 100;
-        }
-
-        if (! $this->status) {
-            return 0;
         }
 
         // Read configurable parameters from General Settings
@@ -164,7 +231,7 @@ class Reporting extends Model implements HasMedia
         $score = $baseScore;
 
         // Get outstanding level (1=Very Easy, 2=Easy, 3=Normal, 4=Hard, 5=Very Hard)
-        $level = $this->outstanding?->level ?? 3;
+        $level = $this->outstanding !== null ? $this->outstanding->level : 3;
 
         // 1. Penalty keterlambatan lapor
         $graceDays = $level >= 4 ? 1 : 0; // Hard/Very Hard gets 1 day tolerance

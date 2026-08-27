@@ -12,10 +12,13 @@ use App\Filament\Resources\Support\SupportReportings\Schemas\SupportReportingInf
 use App\Filament\Resources\Support\SupportReportings\Tables\SupportReportingsTable;
 use App\Models\Reporting;
 use BackedEnum;
+use Carbon\Carbon;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -48,24 +51,24 @@ class SupportReportingResource extends Resource
                     Toggle::make('is_ho')
                         ->label('Is HO Visit? (Auto 100)')
                         ->live(),
-                    
+
                     Toggle::make('has_photo')
                         ->label('Has Photo Attachment')
                         ->live(),
-                        
+
                     Toggle::make('has_form')
                         ->label('Has Form Support')
                         ->live(),
-                    
+
                     Toggle::make('is_sameday')
                         ->label('Same Day Progress')
                         ->live(),
-                    
+
                     TextInput::make('days_late')
                         ->label('Days Late')
                         ->numeric()
                         ->live(),
-                        
+
                     Select::make('level')
                         ->label('Difficulty Level')
                         ->options([
@@ -73,11 +76,11 @@ class SupportReportingResource extends Resource
                             2 => 'Easy (2)',
                             3 => 'Normal (3)',
                             4 => 'Hard (4)',
-                            5 => 'Very Hard (5)'
+                            5 => 'Very Hard (5)',
                         ])
                         ->live(),
 
-                    \Filament\Infolists\Components\TextEntry::make('calculated_score')
+                    TextEntry::make('calculated_score')
                         ->label('Final Score (Live Calculation)')
                         ->state(function (Get $get) {
                             return self::calculateSimulatedScore(
@@ -93,6 +96,7 @@ class SupportReportingResource extends Resource
                         ->weight(FontWeight::Bold)
                         ->color(function ($state) {
                             $finalScore = (int) $state;
+
                             return $finalScore >= 80 ? 'success' : ($finalScore >= 60 ? 'warning' : 'danger');
                         }),
                 ])->columns(2),
@@ -100,21 +104,23 @@ class SupportReportingResource extends Resource
             Textarea::make('evaluation_note')
                 ->label('Evaluation Note')
                 ->placeholder('Optional notes regarding the score...')
-                ->maxLength(255)
+                ->maxLength(255),
         ];
     }
 
     public static function calculateSimulatedScore($isHo, $hasPhoto, $hasForm, $daysLate, $isSameday, $level): int
     {
-        if ($isHo) return 100;
-        
+        if ($isHo) {
+            return 100;
+        }
+
         $score = (int) safe_db_config('general.kpi_base_score', 100);
         $level = (int) $level;
         $graceDays = $level >= 4 ? 1 : 0;
-        
+
         $daysLate = (int) $daysLate;
         $effectiveLate = max(0, $daysLate - $graceDays);
-        
+
         if ($effectiveLate >= 3) {
             $score -= (int) safe_db_config('general.kpi_late_penalty_h3', 50);
         } elseif ($effectiveLate == 2) {
@@ -122,30 +128,36 @@ class SupportReportingResource extends Resource
         } elseif ($effectiveLate == 1) {
             $score -= (int) safe_db_config('general.kpi_late_penalty_h1', 10);
         }
-        
-        if (!$hasPhoto) $score -= (int) safe_db_config('general.kpi_no_photo_penalty', 15);
-        if (!$hasForm) $score -= (int) safe_db_config('general.kpi_no_form_penalty', 30);
-        
-        if ($isSameday) $score += (int) safe_db_config('general.kpi_sameday_bonus', 15);
-        
+
+        if (! $hasPhoto) {
+            $score -= (int) safe_db_config('general.kpi_no_photo_penalty', 15);
+        }
+        if (! $hasForm) {
+            $score -= (int) safe_db_config('general.kpi_no_form_penalty', 30);
+        }
+
+        if ($isSameday) {
+            $score += (int) safe_db_config('general.kpi_sameday_bonus', 15);
+        }
+
         $levelBonus = match ($level) {
             5 => (int) safe_db_config('general.kpi_bonus_very_hard', 15),
             4 => (int) safe_db_config('general.kpi_bonus_hard', 10),
             default => 0,
         };
         $score += $levelBonus;
-        
+
         return max(0, $score);
     }
 
     public static function getEvaluationFillFormCallback(): \Closure
     {
         return function ($record): array {
-            $visitDate = \Carbon\Carbon::parse($record->date_visit ?? now())->startOfDay();
+            $visitDate = Carbon::parse($record->date_visit ?? now())->startOfDay();
             $inputDate = $record->created_at ? $record->created_at->startOfDay() : now()->startOfDay();
             $daysLate = max(0, $inputDate->diffInDays($visitDate));
-            
-            $outstandingDateIn = $record->outstanding?->date_in ? \Carbon\Carbon::parse($record->outstanding->date_in)->startOfDay() : null;
+
+            $outstandingDateIn = $record->outstanding?->date_in ? Carbon::parse($record->outstanding->date_in)->startOfDay() : null;
             $isSameday = $outstandingDateIn && $visitDate->eq($outstandingDateIn);
 
             return [
@@ -176,7 +188,7 @@ class SupportReportingResource extends Resource
                 'score' => $finalScore,
                 'evaluation_note' => $data['evaluation_note'],
             ]);
-            \Filament\Notifications\Notification::make()
+            Notification::make()
                 ->title('Evaluation updated successfully')
                 ->success()
                 ->send();

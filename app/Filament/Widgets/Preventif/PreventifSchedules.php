@@ -21,7 +21,8 @@ class PreventifSchedules extends TableWidget
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn (): Builder => Reporting::where('status', null))
+            // openSchedule = scheduled + in_progress; jadwal yang dibatalkan tidak ikut.
+            ->query(fn (): Builder => Reporting::query()->openSchedule())
             ->columns([
                 Stack::make([
                     TextColumn::make('date_visit')
@@ -52,7 +53,7 @@ class PreventifSchedules extends TableWidget
                     ->label('')
                     ->icon('heroicon-m-map-pin')
                     ->button()
-                    ->disabled(fn($record) => empty($record->outstanding?->location?->latitude) || empty($record->outstanding?->location?->longitude))
+                    ->disabled(fn ($record) => empty($record->outstanding?->location?->latitude) || empty($record->outstanding?->location?->longitude))
                     ->tooltip('Lihat di Google Maps')
                     ->color('success')
                     ->url(function ($record) {
@@ -78,7 +79,7 @@ class PreventifSchedules extends TableWidget
                     })
                     ->icon('heroicon-m-play-circle')
                     ->color('danger')
-                    ->visible(fn(Model $record) => !$record->start_work)
+                    ->visible(fn (Model $record) => ! $record->start_work)
                     ->requiresConfirmation()
                     ->modalHeading('Start work')
                     ->modalDescription('Yakin anda akan memulai tugas preventif ini?')

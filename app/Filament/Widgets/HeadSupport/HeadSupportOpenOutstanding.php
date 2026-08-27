@@ -26,7 +26,12 @@ class HeadSupportOpenOutstanding extends TableWidget
                 $user = auth()->user();
 
                 return Reporting::query()
-                    ->whereRaw('reportings.created_at = (SELECT MAX(r2.created_at) FROM reportings r2 WHERE r2.outstanding_id = reportings.outstanding_id)')
+                    // Laporan terakhir per outstanding. MAX(id), bukan MAX(created_at):
+                    // ULID sudah urut waktu, dan created_at yang kembar persis bikin
+                    // outstanding muncul dua kali (58 kasus di data saat ini).
+                    // Bentuk korelasi dipakai di sini karena filter di bawah menyempitkan
+                    // kandidat lebih dulu; lihat HeadSupportOverview untuk bentuk lain.
+                    ->whereRaw('reportings.id = (SELECT MAX(r2.id) FROM reportings r2 WHERE r2.outstanding_id = reportings.outstanding_id)')
                     ->whereHas('outstanding', function ($query) use ($user) {
                         // Rentang umur outstanding diatur lewat filter "Lama Open".
                         $query->where('status', OutstandingStatus::Open)
@@ -83,10 +88,13 @@ class HeadSupportOpenOutstanding extends TableWidget
                     ->label('Status')
                     ->sortable()
                     ->badge()
-                    // Status null = laporan terbaru masih berupa jadwal yang belum dikerjakan.
-                    ->state(fn ($record) => $this->reportStatus($record)?->getLabel() ?? 'Sedang dijadwalkan')
-                    ->color(fn ($record) => $this->reportStatus($record)?->getColor() ?? 'info')
-                    ->icon(fn ($record) => $this->reportStatus($record)?->getIcon() ?? 'heroicon-m-calendar-days'),
+                    // Belum ada status hasil = laporan terbaru masih berupa jadwal;
+                    // tampilkan tahapnya (dijadwalkan / sedang dikerjakan / dibatalkan).
+                    ->state(fn ($record) => $this->reportStatus($record)?->getLabel() ?? $record->state->getLabel())
+                    ->color(fn ($record) => $this->reportStatus($record)?->getColor() ?? $record->state->getColor())
+                    ->icon(fn ($record) => $this->reportStatus($record)?->getIcon() ?? $record->state->getIcon())
+                    // Kenapa pending: alasan yang dipilih PIC.
+                    ->description(fn ($record) => $record->pending_reason?->getLabel()),
                 TextColumn::make('revisit')
                     ->label('Revisit')
                     ->sortable()

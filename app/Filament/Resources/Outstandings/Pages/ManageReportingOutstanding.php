@@ -2,25 +2,24 @@
 
 namespace App\Filament\Resources\Outstandings\Pages;
 
+use App\Enums\ReportingState;
 use App\Filament\Resources\Outstandings\OutstandingResource;
-use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
+use App\Models\Reporting;
 use BackedEnum;
 use Carbon\Carbon;
-use Filament\Actions\AssociateAction;
-use Filament\Actions\BulkActionGroup;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\DissociateAction;
-use Filament\Actions\DissociateBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -82,12 +81,13 @@ class ManageReportingOutstanding extends ManageRelatedRecords
                         if ($record->start_work && $record->end_work) {
                             $start = Carbon::parse($record->start_work);
                             $end = Carbon::parse($record->end_work);
-                            
+
                             return $start->diffForHumans($end, [
                                 'parts' => 2, // Menampilkan 2 unit waktu, misalnya: "2 hours 30 minutes"
                                 'syntax' => Carbon::DIFF_ABSOLUTE, // Menghilangkan kata seperti "ago"
                             ]);
                         }
+
                         return '-'; // Jika salah satu kolom tidak ada nilainya
                     }),
                 TextColumn::make('work')
@@ -102,6 +102,12 @@ class ManageReportingOutstanding extends ManageRelatedRecords
                 TextColumn::make('note')
                     ->label('Note')
                     ->html(),
+                TextColumn::make('state')
+                    ->label('Tahap')
+                    ->badge()
+                    ->description(fn (Reporting $record) => $record->state === ReportingState::Cancelled
+                        ? $record->cancel_reason
+                        : null),
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge(),
@@ -123,7 +129,7 @@ class ManageReportingOutstanding extends ManageRelatedRecords
                     ->stacked()
                     ->circular()
                     ->overlap(6)
-                    ->ring(3, '#ffffffff')
+                    ->ring(3, '#ffffffff'),
             ])
             ->filters([
                 //
@@ -132,6 +138,31 @@ class ManageReportingOutstanding extends ManageRelatedRecords
                 // CreateAction::make(),
             ])
             ->recordActions([
+                // Jadwal yang tidak jadi dikunjungi ditutup di sini: barisnya tetap
+                // tersimpan sebagai riwayat, tapi keluar dari daftar kerja support.
+                Action::make('cancelSchedule')
+                    ->label('Batalkan jadwal')
+                    ->icon('heroicon-m-no-symbol')
+                    ->color('danger')
+                    ->visible(fn (Reporting $record) => in_array($record->state, ReportingState::openStates(), true))
+                    ->schema([
+                        Textarea::make('cancel_reason')
+                            ->label('Alasan pembatalan')
+                            ->required()
+                            ->maxLength(255)
+                            ->rows(2),
+                    ])
+                    ->modalHeading('Batalkan jadwal kunjungan')
+                    ->modalSubmitActionLabel('Ya, batalkan')
+                    ->modalCancelActionLabel('Kembali')
+                    ->action(function (Reporting $record, array $data): void {
+                        $record->cancel($data['cancel_reason']);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Jadwal dibatalkan')
+                            ->send();
+                    }),
                 EditAction::make()
                     ->modalWidth(Width::ScreenExtraLarge),
                 ViewAction::make()

@@ -4,14 +4,15 @@ namespace App\Filament\Resources\Support\SupportReportings\Pages;
 
 use App\Enums\ReportStatus;
 use App\Filament\Resources\Support\SupportReportings\SupportReportingResource;
+use App\Jobs\CalculateSupportTravelDistance;
 use App\Mail\SupportReportingMail;
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Mail;
-use Inerba\DbConfig\DbConfig;
 
 class EditSupportReporting extends EditRecord
 {
@@ -19,9 +20,9 @@ class EditSupportReporting extends EditRecord
 
     protected bool $shouldSendEmail = false;
 
-    public function getTitle(): string 
+    public function getTitle(): string
     {
-        return $this->record->location_title; 
+        return $this->record->location_title;
     }
 
     public function getHeading(): string
@@ -43,7 +44,7 @@ class EditSupportReporting extends EditRecord
         if ($this->record->outstanding?->location?->is_ho) {
             $data['status'] = ReportStatus::Finish->value;
         }
-    
+
         // Set end_work on the first save only (when it's still null)
         if (empty($this->record->end_work)) {
             $data['end_work'] = now();
@@ -85,12 +86,12 @@ class EditSupportReporting extends EditRecord
                 $updateData['status'] = '0'; // OutstandingStatus::Open
             }
 
-            if (!empty($updateData)) {
+            if (! empty($updateData)) {
                 $outstanding->update($updateData);
             }
         }
 
-        \App\Jobs\CalculateSupportTravelDistance::dispatch($this->record->id);
+        CalculateSupportTravelDistance::dispatch($this->record->id);
     }
 
     /**
@@ -103,7 +104,7 @@ class EditSupportReporting extends EditRecord
 
         $teamName = $reporting->outstanding?->location?->team?->name;
 
-        if (!$teamName) {
+        if (! $teamName) {
             return;
         }
 
@@ -118,14 +119,12 @@ class EditSupportReporting extends EditRecord
 
         $mail = Mail::to($toEmail);
 
-        if (!empty($ccEmail)) {
+        if (! empty($ccEmail)) {
             $mail->cc($ccEmail);
         }
 
         $mail->queue(new SupportReportingMail($reporting));
     }
-
-
 
     protected function getSaveFormAction(): Action
     {
@@ -135,10 +134,10 @@ class EditSupportReporting extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
-        
-        if ($user && $user->hasRole('support') && !$user->hasRole(['head_support'])) {
+
+        if ($user && $user->hasRole('support') && ! $user->hasRole(['head_support'])) {
             return '/';
         }
 
