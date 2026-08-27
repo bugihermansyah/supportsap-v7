@@ -220,10 +220,13 @@ class PerformanceRankingWidget extends BaseWidget
                 // nilainya selalu 'Online'.
             ])
             ->actions([
-                Action::make('view_profile')
-                    ->label('KPI Raport')
-                    ->icon('heroicon-m-user')
-                    ->url(fn (User $record): string => UserKpiReport::getUrl(['user_id' => $record->id])),
+                // Dinonaktifkan sementara atas permintaan. Halaman KPI Raport tetap
+                // bisa dibuka lewat menunya sendiri, dan sudah menerima ?user_id=.
+                // Aktifkan lagi dengan membuka komentar di bawah.
+                // Action::make('view_profile')
+                //     ->label('KPI Raport')
+                //     ->icon('heroicon-m-user')
+                //     ->url(fn (User $record): string => UserKpiReport::getUrl(['user_id' => $record->id])),
             ]);
     }
 }

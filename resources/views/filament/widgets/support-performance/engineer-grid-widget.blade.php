@@ -73,7 +73,8 @@
                         </div>
                     </div>
 
-                    <!-- Actions -->
+                    {{-- Tombol KPI Raport dinonaktifkan sementara atas permintaan.
+                         Aktifkan lagi dengan membuka komentar di bawah.
                     <div class="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700">
                         <x-filament::button
                             tag="a"
@@ -86,6 +87,7 @@
                             KPI Raport
                         </x-filament::button>
                     </div>
+                    --}}
                 </x-filament::section>
             @endforeach
         </div>
