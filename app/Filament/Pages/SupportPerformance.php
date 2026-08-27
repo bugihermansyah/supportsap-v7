@@ -2,17 +2,18 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\Customer;
+use App\Filament\Widgets\SupportPerformance\AverageKpiChart;
+use App\Filament\Widgets\SupportPerformance\EngineerGridWidget;
+use App\Filament\Widgets\SupportPerformance\PerformanceRankingWidget;
+use App\Filament\Widgets\SupportPerformance\TeamSummaryWidget;
 use App\Models\Team;
-use App\Models\User;
-use App\Models\Location;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
-use Filament\Schemas\Components\Section;
-use Filament\Forms\Form;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Pages\Dashboard\Concerns\HasFiltersForm;
-use BezhanSalleh\FilamentShield\Traits\HasPageShield;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 
 class SupportPerformance extends BaseDashboard
 {
@@ -20,13 +21,18 @@ class SupportPerformance extends BaseDashboard
     use HasPageShield;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Main';
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar-square';
+
     protected static ?string $navigationLabel = 'Support Performance';
+
     protected static ?string $title = 'Support Performance Center';
+
     protected static ?int $navigationSort = 2;
+
     protected static string $routePath = '/support-performance';
 
-    public function filtersForm(\Filament\Schemas\Schema $schema): \Filament\Schemas\Schema
+    public function filtersForm(Schema $schema): Schema
     {
         return $schema
             ->components([
@@ -43,18 +49,9 @@ class SupportPerformance extends BaseDashboard
                             ->options(Team::pluck('name', 'id'))
                             ->searchable()
                             ->visible(fn () => auth()->user()->hasAnyRole(['manager', 'super_admin', 'helpdesk'])),
-                        // Select::make('user_id')
-                        //     ->label('Engineer')
-                        //     ->options(User::pluck('name', 'id'))
-                        //     ->searchable(),
-                        // Select::make('customer_id')
-                        //     ->label('Customer')
-                        //     ->options(Customer::pluck('name', 'id'))
-                        //     ->searchable(),
-                        // Select::make('location_id')
-                        //     ->label('Area / Location')
-                        //     ->options(Location::pluck('name', 'id'))
-                        //     ->searchable(),
+                        // Filter Support / Customer / Location dihapus: tidak dibutuhkan.
+                        // Kode pembacaannya di widget ikut dibuang, jadi halaman ini
+                        // hanya disaring lewat tanggal dan team.
                         // Select::make('status')
                         //     ->label('Status')
                         //     ->options([
@@ -80,10 +77,10 @@ class SupportPerformance extends BaseDashboard
     public function getWidgets(): array
     {
         return [
-            \App\Filament\Widgets\SupportPerformance\TeamSummaryWidget::class,
-            \App\Filament\Widgets\SupportPerformance\EngineerGridWidget::class,
-            \App\Filament\Widgets\SupportPerformance\PerformanceRankingWidget::class,
-            \App\Filament\Widgets\SupportPerformance\AverageKpiChart::class,
+            TeamSummaryWidget::class,
+            EngineerGridWidget::class,
+            PerformanceRankingWidget::class,
+            AverageKpiChart::class,
         ];
     }
 }

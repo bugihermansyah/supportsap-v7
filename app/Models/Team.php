@@ -6,6 +6,15 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Kolom nyata tabel teams (skema dikelola langsung di MySQL).
+ *
+ * @property string $id
+ * @property string $name
+ * @property string|null $color
+ * @property array|null $email_to
+ * @property array|null $email_cc
+ */
 class Team extends Model
 {
     use HasUlids;

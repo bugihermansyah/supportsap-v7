@@ -39,10 +39,11 @@ class ManageReportingOutstanding extends ManageRelatedRecords
                     ->required()
                     ->maxLength(255),
                 TextInput::make('score')
-                    ->label('Score (0-100)')
+                    ->label('Score')
+                    ->helperText('Kosongkan untuk memakai perhitungan otomatis. Batas atas mengikuti rumus KPI di General Settings.')
                     ->numeric()
                     ->minValue(0)
-                    ->maxValue(100),
+                    ->maxValue(fn () => Reporting::maxPossibleScore()),
                 TextInput::make('evaluation_note')
                     ->label('Evaluation Note')
                     ->maxLength(255),

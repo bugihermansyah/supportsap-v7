@@ -145,6 +145,12 @@ class Reporting extends Model implements HasMedia
                 $reporting->pending_reason = null;
             }
 
+            // Skor dijaga di rentang yang mungkin dihasilkan rumus, dari jalur mana pun
+            // (form evaluasi, import, tinker).
+            if ($reporting->score !== null) {
+                $reporting->score = max(0, min((int) $reporting->score, static::maxPossibleScore()));
+            }
+
             $reporting->state = match (true) {
                 $reporting->status !== null => ReportingState::Reported,
                 $reporting->state === ReportingState::Cancelled => ReportingState::Cancelled,
@@ -165,6 +171,18 @@ class Reporting extends Model implements HasMedia
                 $reporting->score = $reporting->calculateAutoScore();
             }
         });
+    }
+
+    /**
+     * Skor tertinggi yang mungkin dihasilkan rumus KPI: base + bonus same-day +
+     * bonus Very Hard. Dipakai untuk membatasi input manual (pernah ada baris
+     * ber-skor 999 yang menarik rata-rata KPI seluruh tim).
+     */
+    public static function maxPossibleScore(): int
+    {
+        return (int) safe_db_config('general.kpi_base_score', 100)
+            + (int) safe_db_config('general.kpi_sameday_bonus', 15)
+            + (int) safe_db_config('general.kpi_bonus_very_hard', 15);
     }
 
     public static function getScoreGrade(int $score): string
@@ -190,12 +208,15 @@ class Reporting extends Model implements HasMedia
         $b = (int) safe_db_config('general.kpi_grade_b_min', 70);
         $c = (int) safe_db_config('general.kpi_grade_c_min', 50);
 
+        // Bandingkan sebagai rentang, sejalan dengan getScoreGrade(). Sebelumnya
+        // memakai perbandingan sama-dengan, sehingga skor 97 (grade A) pun merah
+        // karena tidak persis menyentuh ambangnya.
         return match (true) {
-            $score === $aPlus => 'success',
-            $score === $a => 'success',
-            $score === $b => 'info',
-            $score === $c => 'warning',
-            default => 'danger',
+            $score > $aPlus => 'success',   // A+
+            $score > $a => 'success',       // A
+            $score > $b => 'info',          // B
+            $score > $c => 'warning',       // C
+            default => 'danger',            // D
         };
     }
 
