@@ -65,25 +65,32 @@ class HeadSupportOpenOutstanding extends TableWidget
                     ->date('d M Y'),
                 TextColumn::make('since')
                     ->label('Since (Days)')
+                    // Umur tiket dalam hari kalender: dihitung dari awal hari, bukan dari
+                    // jam sekarang, supaya lapor kemarin = 1 hari (bukan 2 karena pembulatan).
                     ->state(function ($record) {
-                        if (! $record->outstanding?->date_in) {
+                        $dateIn = $record->outstanding?->date_in;
+
+                        if (! $dateIn) {
                             return '-';
                         }
 
-                        return (int) round(now()->diffInDays($record->outstanding->date_in, false));
+                        return (int) Carbon::parse($dateIn)->startOfDay()->diffInDays(now()->startOfDay());
                     })
                     ->sortable(query: function ($query, $direction) {
                         return $query->orderBy('outstandings.date_in', $direction);
                     })
                     ->badge()
                     ->color(fn ($state) => match (true) {
+                        ! is_numeric($state) => 'gray',
                         $state >= 7 => 'danger',
                         $state >= 3 => 'warning',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn ($state) => is_numeric($state)
-                        ? ($state >= 0 ? "{$state} hari lagi" : abs($state).' hari lalu')
-                        : $state),
+                    ->formatStateUsing(fn ($state) => match (true) {
+                        ! is_numeric($state) => $state,
+                        (int) $state === 0 => 'Hari ini',
+                        default => $state.' hari lalu',
+                    }),
                 TextColumn::make('status')
                     ->label('Status')
                     ->sortable()
@@ -92,9 +99,7 @@ class HeadSupportOpenOutstanding extends TableWidget
                     // tampilkan tahapnya (dijadwalkan / sedang dikerjakan / dibatalkan).
                     ->state(fn ($record) => $this->reportStatus($record)?->getLabel() ?? $record->state->getLabel())
                     ->color(fn ($record) => $this->reportStatus($record)?->getColor() ?? $record->state->getColor())
-                    ->icon(fn ($record) => $this->reportStatus($record)?->getIcon() ?? $record->state->getIcon())
-                    // Kenapa pending: alasan yang dipilih PIC.
-                    ->description(fn ($record) => $record->pending_reason?->getLabel()),
+                    ->icon(fn ($record) => $this->reportStatus($record)?->getIcon() ?? $record->state->getIcon()),
                 TextColumn::make('revisit')
                     ->label('Revisit')
                     ->sortable()
@@ -102,34 +107,13 @@ class HeadSupportOpenOutstanding extends TableWidget
                     ->state(fn ($record) => $record->revisit ?: $record->date_visit)
                     ->description(fn ($record) => $record->revisit ? null : $this->scheduleNote($record))
                     ->date('d M Y'),
-                TextColumn::make('revisit_diff')
-                    ->label('Revisit In')
-                    ->state(function ($record) {
-                        $date = $record->revisit ?: $record->date_visit;
-
-                        if (! $date) {
-                            return '-';
-                        }
-
-                        return (int) round(now()->startOfDay()->diffInDays(Carbon::parse($date)->startOfDay(), false)); // false = arah positif/negatif
-                    })
+                TextColumn::make('pending_reason')
+                    ->label('Reason Pending')
                     ->badge()
-                    ->sortable(query: function ($query, $direction) {
-                        return $query->orderBy('reportings.revisit', $direction);
-                    })
-                    ->color(fn ($state) => match (true) {
-                        ! is_numeric($state) => 'gray',
-                        $state < 0 => 'danger',      // sudah lewat
-                        $state == 0 => 'warning',    // hari ini
-                        $state <= 3 => 'info',       // mendekati
-                        default => 'success',        // masih lama
-                    })
-                    ->formatStateUsing(fn ($state) => match (true) {
-                        ! is_numeric($state) => $state,
-                        $state == 0 => 'Hari ini',
-                        $state > 0 => "{$state} hari lagi",
-                        default => abs($state).' hari lalu',
-                    }),
+                    ->color('warning')
+                    ->wrap()
+                    ->sortable()
+                    ->placeholder('-'),
             ])
             ->recordUrl(fn ($record) => route('filament.admin.resources.outstandings.edit', ['record' => $record->outstanding->id]))
             ->filters([
