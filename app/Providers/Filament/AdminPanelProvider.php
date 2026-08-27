@@ -65,6 +65,9 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()
                     ->label('Main'),
                 NavigationGroup::make()
+                    ->label('Quiz')
+                    ->collapsed(),
+                NavigationGroup::make()
                     ->label('Support Reports')
                     ->collapsed(),
                 NavigationGroup::make()

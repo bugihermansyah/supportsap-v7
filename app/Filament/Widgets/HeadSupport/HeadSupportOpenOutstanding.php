@@ -2,8 +2,10 @@
 
 namespace App\Filament\Widgets\HeadSupport;
 
-use App\Models\Outstanding;
+use App\Enums\OutstandingStatus;
+use App\Enums\ReportStatus;
 use App\Models\Reporting;
+use Carbon\Carbon;
 use Filament\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -15,7 +17,7 @@ class HeadSupportOpenOutstanding extends TableWidget
 {
     protected static ?int $sort = 2;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table
     {
@@ -26,10 +28,10 @@ class HeadSupportOpenOutstanding extends TableWidget
                 return Reporting::query()
                     ->whereRaw('reportings.created_at = (SELECT MAX(r2.created_at) FROM reportings r2 WHERE r2.outstanding_id = reportings.outstanding_id)')
                     ->whereHas('outstanding', function ($query) use ($user) {
-                        $query->where('status', \App\Enums\OutstandingStatus::Open)
-                              ->where('outstandings.is_implement', 0)
-                              ->where('outstandings.date_in', '<=', now()->subDays(3))
-                              ->whereIn('reporter', ['client','support']);
+                        // Rentang umur outstanding diatur lewat filter "Lama Open".
+                        $query->where('status', OutstandingStatus::Open)
+                            ->where('outstandings.is_implement', 0)
+                            ->whereIn('reporter', ['client', 'support']);
 
                         if ($user && $user->team_id && ! $user->hasRole('admin')) {
                             $query->whereHas('location', function ($q) use ($user) {
@@ -42,7 +44,7 @@ class HeadSupportOpenOutstanding extends TableWidget
                 TextColumn::make('outstanding.location.team.name')
                     ->label('Team')
                     ->sortable()
-                    ->visible(fn() => auth()->user()?->hasAnyRole(['manager','helpdesk']))
+                    ->visible(fn () => auth()->user()?->hasAnyRole(['manager', 'helpdesk']))
                     ->searchable(),
                 TextColumn::make('outstanding.location.name')
                     ->label('Location')
@@ -75,44 +77,77 @@ class HeadSupportOpenOutstanding extends TableWidget
                         default => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => is_numeric($state)
-                        ? ($state >= 0 ? "{$state} days left" : abs($state) . ' days ago')
+                        ? ($state >= 0 ? "{$state} hari lagi" : abs($state).' hari lalu')
                         : $state),
                 TextColumn::make('status')
                     ->label('Status')
                     ->sortable()
                     ->badge()
-                    ->formatStateUsing(fn ($state) => $state instanceof \App\Enums\ReportStatus ? $state->getLabel() : (\App\Enums\ReportStatus::tryFrom($state)?->getLabel() ?? $state))
-                    ->color(fn ($state) => $state instanceof \App\Enums\ReportStatus ? $state->getColor() : (\App\Enums\ReportStatus::tryFrom($state)?->getColor() ?? 'gray'))
-                    ->icon(fn ($state) => $state instanceof \App\Enums\ReportStatus ? $state->getIcon() : \App\Enums\ReportStatus::tryFrom($state)?->getIcon()),
+                    // Status null = laporan terbaru masih berupa jadwal yang belum dikerjakan.
+                    ->state(fn ($record) => $this->reportStatus($record)?->getLabel() ?? 'Sedang dijadwalkan')
+                    ->color(fn ($record) => $this->reportStatus($record)?->getColor() ?? 'info')
+                    ->icon(fn ($record) => $this->reportStatus($record)?->getIcon() ?? 'heroicon-m-calendar-days'),
                 TextColumn::make('revisit')
                     ->label('Revisit')
                     ->sortable()
+                    // Belum ada revisit karena baru dijadwalkan; pakai tanggal jadwalnya.
+                    ->state(fn ($record) => $record->revisit ?: $record->date_visit)
+                    ->description(fn ($record) => $record->revisit ? null : $this->scheduleNote($record))
                     ->date('d M Y'),
                 TextColumn::make('revisit_diff')
                     ->label('Revisit In')
                     ->state(function ($record) {
-                        if (! $record->revisit) {
+                        $date = $record->revisit ?: $record->date_visit;
+
+                        if (! $date) {
                             return '-';
                         }
 
-                        return (int) round(now()->diffInDays($record->revisit, false)); // false = arah positif/negatif
+                        return (int) round(now()->startOfDay()->diffInDays(Carbon::parse($date)->startOfDay(), false)); // false = arah positif/negatif
                     })
                     ->badge()
                     ->sortable(query: function ($query, $direction) {
                         return $query->orderBy('reportings.revisit', $direction);
                     })
                     ->color(fn ($state) => match (true) {
+                        ! is_numeric($state) => 'gray',
                         $state < 0 => 'danger',      // sudah lewat
                         $state == 0 => 'warning',    // hari ini
                         $state <= 3 => 'info',       // mendekati
                         default => 'success',        // masih lama
                     })
-                    ->formatStateUsing(fn ($state) => is_numeric($state)
-                        ? ($state >= 0 ? "{$state} days left" : abs($state) . ' days ago')
-                        : $state),
+                    ->formatStateUsing(fn ($state) => match (true) {
+                        ! is_numeric($state) => $state,
+                        $state == 0 => 'Hari ini',
+                        $state > 0 => "{$state} hari lagi",
+                        default => abs($state).' hari lalu',
+                    }),
             ])
             ->recordUrl(fn ($record) => route('filament.admin.resources.outstandings.edit', ['record' => $record->outstanding->id]))
             ->filters([
+                SelectFilter::make('open_age')
+                    ->label('Lama Open')
+                    ->options([
+                        '1' => 'Lebih dari 1 hari',
+                        '2' => 'Lebih dari 2 hari',
+                        '3' => 'Lebih dari 3 hari',
+                        'all' => 'Semua data',
+                    ])
+                    ->default('3')
+                    ->selectablePlaceholder(false)
+                    ->query(function (Builder $query, array $data): Builder {
+                        $value = $data['value'] ?? '3';
+
+                        if ($value === 'all') {
+                            return $query;
+                        }
+
+                        // Umur outstanding lebih dari N hari sejak date_in.
+                        return $query->whereHas(
+                            'outstanding',
+                            fn (Builder $q) => $q->whereDate('outstandings.date_in', '<', today()->subDays((int) $value)),
+                        );
+                    }),
                 SelectFilter::make('reportings.status')
                     ->label('Status')
                     ->options([
@@ -135,8 +170,36 @@ class HeadSupportOpenOutstanding extends TableWidget
             ]);
     }
 
+    /** Status laporan yang sudah dikerjakan; null berarti baris ini masih berupa jadwal. */
+    protected function reportStatus($record): ?ReportStatus
+    {
+        return $this->toStatus($record->status);
+    }
+
+    /** Normalisasi nilai status: bisa datang sebagai enum (hasil cast) atau nilai mentah. */
+    protected function toStatus($value): ?ReportStatus
+    {
+        if ($value instanceof ReportStatus) {
+            return $value;
+        }
+
+        return $value === null ? null : ReportStatus::tryFrom((string) $value);
+    }
+
+    /** Keterangan tanggal jadwal untuk laporan yang belum dikerjakan. */
+    protected function scheduleNote($record): ?string
+    {
+        if (! $record->date_visit) {
+            return null;
+        }
+
+        $days = (int) round(now()->startOfDay()->diffInDays(Carbon::parse($record->date_visit)->startOfDay(), false));
+
+        return $days === 0 ? 'Jadwal hari ini' : 'Jadwal kunjungan';
+    }
+
     public static function canView(): bool
     {
-        return auth()->user()?->hasAnyRole(['head_support', 'manager','helpdesk']);
+        return auth()->user()?->hasAnyRole(['head_support', 'manager', 'helpdesk']);
     }
 }

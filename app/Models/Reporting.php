@@ -3,15 +3,43 @@
 namespace App\Models;
 
 use App\Enums\ReportStatus;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
+/**
+ * Kolom nyata tabel reportings (skema dikelola langsung di MySQL).
+ *
+ * @property string $id
+ * @property string $outstanding_id
+ * @property string|null $cause
+ * @property string|null $action
+ * @property string|null $solution
+ * @property string $work
+ * @property string $date_visit
+ * @property string|null $user_id
+ * @property ReportStatus|null $status
+ * @property string|null $revisit
+ * @property string|null $note
+ * @property string|null $signature
+ * @property \Illuminate\Support\Carbon|null $start_work
+ * @property \Illuminate\Support\Carbon|null $end_work
+ * @property \Illuminate\Support\Carbon|null $send_mail_at
+ * @property \Illuminate\Support\Carbon|null $user_created_at
+ * @property array|null $email_to
+ * @property array|null $email_cc
+ * @property int|null $score
+ * @property string|null $evaluation_note
+ * @property-read Outstanding|null $outstanding
+ * @property-read Collection<int, User> $users
+ * @property-read string $location_title
+ */
 class Reporting extends Model implements HasMedia
 {
     use HasUlids;
@@ -53,7 +81,7 @@ class Reporting extends Model implements HasMedia
 
     public function getLocationTitleAttribute(): string
     {
-        return "{$this->outstanding?->location?->name} - " . ($this->outstanding?->title);
+        return "{$this->outstanding?->location?->name} - ".($this->outstanding?->title);
     }
 
     protected static function booted()
@@ -79,32 +107,32 @@ class Reporting extends Model implements HasMedia
     public static function getScoreGrade(int $score): string
     {
         $aPlus = (int) safe_db_config('general.kpi_grade_a_plus_min', 100);
-        $a     = (int) safe_db_config('general.kpi_grade_a_min', 85);
-        $b     = (int) safe_db_config('general.kpi_grade_b_min', 70);
-        $c     = (int) safe_db_config('general.kpi_grade_c_min', 50);
+        $a = (int) safe_db_config('general.kpi_grade_a_min', 85);
+        $b = (int) safe_db_config('general.kpi_grade_b_min', 70);
+        $c = (int) safe_db_config('general.kpi_grade_c_min', 50);
 
         return match (true) {
             $score > $aPlus => 'A+',
-            $score > $a     => 'A',
-            $score > $b     => 'B',
-            $score > $c     => 'C',
-            default         => 'D',
+            $score > $a => 'A',
+            $score > $b => 'B',
+            $score > $c => 'C',
+            default => 'D',
         };
     }
 
     public static function getScoreColor(int $score): string
     {
         $aPlus = (int) safe_db_config('general.kpi_grade_a_plus_min', 100);
-        $a     = (int) safe_db_config('general.kpi_grade_a_min', 85);
-        $b     = (int) safe_db_config('general.kpi_grade_b_min', 70);
-        $c     = (int) safe_db_config('general.kpi_grade_c_min', 50);
+        $a = (int) safe_db_config('general.kpi_grade_a_min', 85);
+        $b = (int) safe_db_config('general.kpi_grade_b_min', 70);
+        $c = (int) safe_db_config('general.kpi_grade_c_min', 50);
 
         return match (true) {
             $score === $aPlus => 'success',
-            $score === $a     => 'success',
-            $score === $b     => 'info',
-            $score === $c     => 'warning',
-            default         => 'danger',
+            $score === $a => 'success',
+            $score === $b => 'info',
+            $score === $c => 'warning',
+            default => 'danger',
         };
     }
 
@@ -118,7 +146,7 @@ class Reporting extends Model implements HasMedia
             return 100;
         }
 
-        if (!$this->status) {
+        if (! $this->status) {
             return 0;
         }
 
@@ -141,13 +169,13 @@ class Reporting extends Model implements HasMedia
         // 1. Penalty keterlambatan lapor
         $graceDays = $level >= 4 ? 1 : 0; // Hard/Very Hard gets 1 day tolerance
 
-        $visitDate = \Carbon\Carbon::parse($this->date_visit ?? now())->startOfDay();
-        $inputDate = $this->end_work ? \Carbon\Carbon::parse($this->end_work)->startOfDay() : ($this->updated_at ? $this->updated_at->startOfDay() : now()->startOfDay());
+        $visitDate = Carbon::parse($this->date_visit ?? now())->startOfDay();
+        $inputDate = $this->end_work ? Carbon::parse($this->end_work)->startOfDay() : ($this->updated_at ? $this->updated_at->startOfDay() : now()->startOfDay());
 
         if ($inputDate->gt($visitDate)) {
             $daysLate = $inputDate->diffInDays($visitDate);
             $effectiveLate = max(0, $daysLate - $graceDays);
-            
+
             if ($effectiveLate >= 3) {
                 $score -= $latePenaltyH3;
             } elseif ($effectiveLate == 2) {
@@ -159,17 +187,17 @@ class Reporting extends Model implements HasMedia
 
         // 2. Kelengkapan Laporan (Foto dan Form Support)
         $hasPhoto = $this->getMedia('attachments')->count() > 0;
-        if (!$hasPhoto) {
+        if (! $hasPhoto) {
             $score -= $noPhotoPenalty;
         }
 
         $hasForm = $this->getMedia('form_support')->count() > 0;
-        if (!$hasForm) {
+        if (! $hasForm) {
             $score -= $noFormPenalty;
         }
 
         // 3. Progress Hari H (Dikerjakan di hari yang sama dengan jadwal info date)
-        $outstandingDateIn = $this->outstanding?->date_in ? \Carbon\Carbon::parse($this->outstanding->date_in)->startOfDay() : null;
+        $outstandingDateIn = $this->outstanding?->date_in ? Carbon::parse($this->outstanding->date_in)->startOfDay() : null;
         if ($outstandingDateIn && $visitDate->eq($outstandingDateIn)) {
             $score += $samedayBonus;
         }
