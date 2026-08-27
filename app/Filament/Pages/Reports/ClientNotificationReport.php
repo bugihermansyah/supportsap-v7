@@ -47,6 +47,21 @@ class ClientNotificationReport extends Page implements HasTable
     /** Batas hari email masih dianggap tepat waktu, dihitung dari tanggal kunjungan. */
     public const GRACE_DAYS = 1;
 
+    /**
+     * Kewajiban kirim notifikasi baru berlaku sejak tanggal ini. Laporan sebelum
+     * tanggal ini tidak dihitung sama sekali — tunggakan lama (4.095 laporan)
+     * sengaja tidak diputihkan dengan mengisi send_mail_at, supaya riwayat
+     * pengiriman tetap jujur.
+     */
+    public const EFFECTIVE_FROM = '2026-09-01';
+
+    // public function getSubheading(): ?string
+    // {
+    //     return 'Kewajiban kirim notifikasi berlaku untuk kunjungan sejak '
+    //         .Carbon::parse(static::EFFECTIVE_FROM)->translatedFormat('d F Y')
+    //         .'. Laporan sebelum tanggal itu tidak dihitung.';
+    // }
+
     public static function canAccess(): bool
     {
         return (bool) auth()->user()?->hasAnyRole([
@@ -127,29 +142,29 @@ class ClientNotificationReport extends Page implements HasTable
                     ->state(fn (Team $record) => max(0, (int) $record->wajib_count - (int) $record->terkirim_count))
                     ->badge()
                     ->color(fn ($state) => $state > 0 ? 'danger' : 'success'),
-                TextColumn::make('compliance')
-                    ->label('% Patuh')
-                    ->alignCenter()
-                    ->badge()
-                    ->state(function (Team $record) {
-                        $wajib = (int) $record->wajib_count;
+                // TextColumn::make('compliance')
+                //     ->label('% Terkirim')
+                //     ->alignCenter()
+                //     ->badge()
+                //     ->state(function (Team $record) {
+                //         $wajib = (int) $record->wajib_count;
 
-                        return $wajib > 0
-                            ? (int) round((int) $record->terkirim_count / $wajib * 100)
-                            : null;
-                    })
-                    ->formatStateUsing(fn ($state) => $state === null ? '-' : $state.'%')
-                    ->color(fn ($state) => match (true) {
-                        $state === null => 'gray',
-                        $state >= 90 => 'success',
-                        $state >= 70 => 'warning',
-                        default => 'danger',
-                    }),
-                TextColumn::make('avg_lag')
-                    ->label('Rata-rata jeda')
-                    ->alignCenter()
-                    ->formatStateUsing(fn ($state) => $state === null ? '-' : $state.' hari')
-                    ->tooltip('Selisih hari antara tanggal kunjungan dan tanggal email terkirim'),
+                //         return $wajib > 0
+                //             ? (int) round((int) $record->terkirim_count / $wajib * 100)
+                //             : null;
+                //     })
+                //     ->formatStateUsing(fn ($state) => $state === null ? '-' : $state.'%')
+                //     ->color(fn ($state) => match (true) {
+                //         $state === null => 'gray',
+                //         $state >= 90 => 'success',
+                //         $state >= 70 => 'warning',
+                //         default => 'danger',
+                //     }),
+                // TextColumn::make('avg_lag')
+                //     ->label('Rata-rata')
+                //     ->alignCenter()
+                //     ->formatStateUsing(fn ($state) => $state === null ? '-' : $state.' hari')
+                //     ->tooltip('Selisih hari antara tanggal kunjungan dan tanggal email terkirim'),
             ])
             ->filters([
                 SelectFilter::make('year')
@@ -172,7 +187,7 @@ class ClientNotificationReport extends Page implements HasTable
             ])
             ->recordActions([
                 Action::make('pending')
-                    ->label('Lihat tunggakan')
+                    ->label('Detail')
                     ->icon('heroicon-m-inbox-stack')
                     ->color('danger')
                     ->modalWidth(Width::FiveExtraLarge)
@@ -197,6 +212,7 @@ class ClientNotificationReport extends Page implements HasTable
         return Reporting::query()
             ->reported()
             ->whereNull('send_mail_at')
+            ->whereDate('date_visit', '>=', static::EFFECTIVE_FROM)
             ->whereHas('outstanding', function (Builder $q) use ($team) {
                 $q->where('reporter', 'client')
                     ->whereHas('location', fn (Builder $l) => $l->where('team_id', $team->id));
@@ -221,6 +237,7 @@ class ClientNotificationReport extends Page implements HasTable
             ->whereColumn('locations.team_id', 'teams.id')
             ->where('outstandings.reporter', 'client')
             ->where('reportings.state', ReportingState::Reported)
+            ->whereDate('reportings.date_visit', '>=', static::EFFECTIVE_FROM)
             ->when($year, fn (Builder $q) => $q->whereYear('reportings.date_visit', $year))
             ->when($month, fn (Builder $q) => $q->whereMonth('reportings.date_visit', $month));
     }
