@@ -9,7 +9,7 @@
     @if (! $attempt)
         <x-filament::section>
             <x-slot name="heading">Quiz yang sedang dibuka</x-slot>
-            <x-slot name="description">Setiap sesi hanya boleh dikerjakan satu kali. Urutan soal diacak untuk tiap peserta.</x-slot>
+            <x-slot name="description">Setiap sesi hanya boleh dikerjakan satu kali. Urutan soal diacak untuk tiap peserta, dan hasilnya baru dibuka setelah sesi ditutup.</x-slot>
 
             @php $sessions = $this->sessions(); @endphp
 
@@ -34,14 +34,26 @@
 
                     <div class="shrink-0">
                         @if ($myAttempt && $myAttempt->finished_at)
-                            <div class="flex items-center gap-2">
-                                <x-filament::badge color="success">
-                                    Nilai {{ $myAttempt->correct_answers }}/{{ $myAttempt->total_questions }}
-                                </x-filament::badge>
-                                <x-filament::button size="sm" color="gray" wire:click="openAttempt('{{ $myAttempt->id }}')">
-                                    Lihat hasil
-                                </x-filament::button>
-                            </div>
+                            @if ($session->resultsVisible())
+                                <div class="flex items-center gap-2">
+                                    <x-filament::badge color="success">
+                                        Nilai {{ $myAttempt->correct_answers }}/{{ $myAttempt->total_questions }}
+                                    </x-filament::badge>
+                                    <x-filament::button size="sm" color="gray" wire:click="openAttempt('{{ $myAttempt->id }}')">
+                                        Lihat hasil
+                                    </x-filament::button>
+                                </div>
+                            @else
+                                {{-- Sesi masih berjalan: peserta belum boleh tahu nilainya. --}}
+                                <div class="flex items-center gap-2">
+                                    <x-filament::badge color="gray" icon="heroicon-m-check-circle">
+                                        Sudah dikerjakan
+                                    </x-filament::badge>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                                        Hasil dibuka {{ $session->ends_at->translatedFormat('d M Y H:i') }}
+                                    </span>
+                                </div>
+                            @endif
                         @elseif ($myAttempt)
                             <x-filament::button size="sm" color="warning" wire:click="openAttempt('{{ $myAttempt->id }}')">
                                 Lanjutkan
@@ -66,21 +78,30 @@
 
                 <div class="divide-y divide-gray-200 dark:divide-white/10">
                     @foreach ($history as $row)
+                        @php $released = (bool) $row->session?->resultsVisible(); @endphp
                         <div class="flex items-center justify-between gap-3 py-3">
                             <div>
                                 <p class="text-sm font-medium text-gray-950 dark:text-white">{{ $row->session?->title ?? 'Sesi terhapus' }}</p>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">
                                     Selesai {{ $row->finished_at->translatedFormat('d M Y H:i') }}
-                                    &middot; durasi {{ \App\Models\QuizAttempt::formatDuration($row->duration_seconds) }}
+                                    @if ($released)
+                                        &middot; durasi {{ \App\Models\QuizAttempt::formatDuration($row->duration_seconds) }}
+                                    @endif
                                 </p>
                             </div>
                             <div class="flex items-center gap-2">
-                                <x-filament::badge color="{{ $row->scorePercentage() >= 70 ? 'success' : ($row->scorePercentage() >= 50 ? 'warning' : 'danger') }}">
-                                    {{ $row->correct_answers }}/{{ $row->total_questions }}
-                                </x-filament::badge>
-                                <x-filament::button size="xs" color="gray" wire:click="openAttempt('{{ $row->id }}')">
-                                    Detail
-                                </x-filament::button>
+                                @if ($released)
+                                    <x-filament::badge color="{{ $row->scorePercentage() >= 70 ? 'success' : ($row->scorePercentage() >= 50 ? 'warning' : 'danger') }}">
+                                        {{ $row->correct_answers }}/{{ $row->total_questions }}
+                                    </x-filament::badge>
+                                    <x-filament::button size="xs" color="gray" wire:click="openAttempt('{{ $row->id }}')">
+                                        Detail
+                                    </x-filament::button>
+                                @else
+                                    <x-filament::badge color="gray" icon="heroicon-m-lock-closed">
+                                        Menunggu sesi ditutup
+                                    </x-filament::badge>
+                                @endif
                             </div>
                         </div>
                     @endforeach
@@ -91,6 +112,30 @@
     {{-- ============================================================ --}}
     {{-- 2. Hasil --}}
     {{-- ============================================================ --}}
+    @elseif ($attempt->isFinished() && ! $this->resultsVisible())
+        {{-- Sesi masih berjalan: nilai dan pembahasan belum boleh dibuka. --}}
+        <x-filament::section>
+            <x-slot name="heading">{{ $attempt->session?->title }}</x-slot>
+            <x-slot name="description">Jawaban kamu sudah terkunci.</x-slot>
+
+            <div class="flex flex-col items-center gap-3 py-8 text-center">
+                <x-filament::icon icon="heroicon-o-lock-closed" class="h-10 w-10 text-gray-400 dark:text-gray-500" />
+
+                <p class="text-base font-semibold text-gray-950 dark:text-white">Hasil belum bisa dilihat</p>
+                <p class="max-w-md text-sm text-gray-500 dark:text-gray-400">
+                    Nilai, peringkat dan pembahasan dibuka setelah sesi ini ditutup
+                    @if ($attempt->session)
+                        pada {{ $attempt->session->ends_at->translatedFormat('d M Y H:i') }}.
+                    @endif
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Selesai {{ $attempt->finished_at?->translatedFormat('d M Y H:i') }}
+                </p>
+
+                <x-filament::button color="gray" wire:click="backToList">Kembali</x-filament::button>
+            </div>
+        </x-filament::section>
+
     @elseif ($attempt->isFinished())
         <x-filament::section>
             <x-slot name="heading">{{ $attempt->session?->title }}</x-slot>

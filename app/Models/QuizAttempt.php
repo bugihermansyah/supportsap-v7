@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -51,6 +52,18 @@ class QuizAttempt extends Model
     public function answers(): HasMany
     {
         return $this->hasMany(QuizAttemptAnswer::class)->orderBy('sort');
+    }
+
+    /**
+     * Hanya attempt dari sesi yang sudah ditutup. Selama sesinya masih berjalan,
+     * nilainya belum boleh ikut dihitung atau ditampilkan di mana pun.
+     */
+    public function scopeFromClosedSessions(Builder $query): Builder
+    {
+        return $query->whereIn(
+            'quiz_session_id',
+            QuizSession::query()->where('ends_at', '<', now())->select('id'),
+        );
     }
 
     public function isFinished(): bool

@@ -110,6 +110,7 @@ class TeamSummaryWidget extends StatsOverviewWidget
 
         // Rata-rata skor quiz tim (persen jawaban benar), hanya sesi yang sudah selesai.
         $quizQuery = QuizAttempt::query()
+            ->fromClosedSessions()
             ->whereNotNull('finished_at')
             ->where('total_questions', '>', 0);
         if ($teamId) {

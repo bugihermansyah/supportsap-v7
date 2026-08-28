@@ -109,6 +109,14 @@ class Quiz extends Page
         return $answers->values()->get($this->index);
     }
 
+    /** Hasil (skor + pembahasan) baru boleh dibuka setelah sesi quiz ditutup. */
+    public function resultsVisible(?QuizAttempt $attempt = null): bool
+    {
+        $attempt ??= $this->attempt();
+
+        return (bool) $attempt?->session?->resultsVisible();
+    }
+
     /** Rekap benar/salah per kategori produk untuk halaman hasil. */
     public function categoryRecap(): Collection
     {
@@ -326,7 +334,9 @@ class Quiz extends Page
         Notification::make()
             ->success()
             ->title('Quiz selesai')
-            ->body("Benar {$attempt->correct_answers} dari {$attempt->total_questions} soal.")
+            ->body($this->resultsVisible($attempt)
+                ? "Benar {$attempt->correct_answers} dari {$attempt->total_questions} soal."
+                : 'Jawaban kamu sudah tersimpan. Hasil dan pembahasan dibuka setelah sesi ini ditutup.')
             ->send();
     }
 

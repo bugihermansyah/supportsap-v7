@@ -75,6 +75,31 @@ class QuizSession extends Model
             && $this->ends_at->gte(now());
     }
 
+    /** Peserta baru boleh melihat hasil setelah sesi ditutup. */
+    public function resultsReleased(): bool
+    {
+        return $this->ends_at->lt(now());
+    }
+
+    /** Panitia boleh melihat hasil kapan saja, peserta harus menunggu sesi ditutup. */
+    public static function canSeeUnreleasedResults(): bool
+    {
+        return (bool) auth()->user()?->hasAnyRole(['helpdesk', 'admin', 'super_admin', 'manager', 'owner']);
+    }
+
+    public function resultsVisible(): bool
+    {
+        return $this->resultsReleased() || static::canSeeUnreleasedResults();
+    }
+
+    /** Sesi yang hasilnya sudah boleh dibuka untuk user saat ini. */
+    public function scopeResultsVisible(Builder $query): Builder
+    {
+        return static::canSeeUnreleasedResults()
+            ? $query
+            : $query->where('ends_at', '<', now());
+    }
+
     /** @return array{label: string, color: string} */
     public function statusBadge(): array
     {

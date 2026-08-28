@@ -105,6 +105,7 @@ class EngineerGridWidget extends Widget
             ->addSelect(['quiz_score' => QuizAttempt::query()
                 ->selectRaw('ROUND(AVG(correct_answers / total_questions * 100))')
                 ->whereColumn('quiz_attempts.user_id', 'users.id')
+                ->fromClosedSessions()
                 ->whereNotNull('finished_at')
                 ->where('total_questions', '>', 0)
                 ->when($startDate, fn ($q) => $q->whereDate('finished_at', '>=', $startDate))
@@ -113,6 +114,7 @@ class EngineerGridWidget extends Widget
             ->addSelect(['quiz_count' => QuizAttempt::query()
                 ->selectRaw('COUNT(*)')
                 ->whereColumn('quiz_attempts.user_id', 'users.id')
+                ->fromClosedSessions()
                 ->whereNotNull('finished_at')
                 ->when($startDate, fn ($q) => $q->whereDate('finished_at', '>=', $startDate))
                 ->when($endDate, fn ($q) => $q->whereDate('finished_at', '<=', $endDate)),

@@ -29,6 +29,8 @@ class QuizLeaderboard extends Page
     /** ULID sesi, atau null untuk rekap semua sesi. */
     public ?string $sessionId = null;
 
+    private ?QuizSession $sessionCache = null;
+
     public static function canAccess(): bool
     {
         return (bool) auth()->user()?->hasAnyRole([
@@ -53,21 +55,34 @@ class QuizLeaderboard extends Page
     {
         return QuizSession::query()
             ->published()
+            ->resultsVisible()
             ->orderByDesc('starts_at')
             ->get();
     }
 
     public function currentSession(): ?QuizSession
     {
-        return $this->sessionId === null
-            ? null
-            : QuizSession::query()->find($this->sessionId);
+        if ($this->sessionId === null) {
+            return null;
+        }
+
+        if ($this->sessionCache?->id === $this->sessionId) {
+            return $this->sessionCache;
+        }
+
+        return $this->sessionCache = QuizSession::query()->find($this->sessionId);
+    }
+
+    /** Peringkat sebuah sesi baru boleh dilihat setelah sesi itu ditutup. */
+    public function resultsVisible(): bool
+    {
+        return (bool) $this->currentSession()?->resultsVisible();
     }
 
     /** Peringkat satu sesi: benar terbanyak, lalu durasi tercepat. */
     public function sessionRanking(): Collection
     {
-        if ($this->sessionId === null) {
+        if ($this->sessionId === null || ! $this->resultsVisible()) {
             return collect();
         }
 
@@ -85,6 +100,7 @@ class QuizLeaderboard extends Page
     {
         return QuizAttempt::query()
             ->whereNotNull('finished_at')
+            ->whereIn('quiz_session_id', QuizSession::query()->resultsVisible()->select('id'))
             ->selectRaw('user_id')
             ->selectRaw('COUNT(*) as sessions_count')
             ->selectRaw('SUM(correct_answers) as total_correct')
