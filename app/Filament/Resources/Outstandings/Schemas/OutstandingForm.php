@@ -62,7 +62,7 @@ class OutstandingForm
                                 ->searchable()
                                 ->options(function () {
                                     $user = auth()->user();
-                                    
+
                                     if ($user->canViewAllSupportTeams() || $user->hasRole('owner')) {
                                         return Location::with('company')->get()->pluck('full_name', 'id');
                                     }
@@ -138,7 +138,7 @@ class OutstandingForm
                                     $state = is_array($state) ? $state : [];
                                     $old = is_array($old) ? $old : [];
                                     $newlyAdded = array_diff($state, $old);
-                                    
+
                                     if (empty($newlyAdded)) return;
 
                                     $users = \App\Models\User::with('profile')->whereIn('id', $newlyAdded)->get();
@@ -246,8 +246,17 @@ class OutstandingForm
                                                 ->whereColumn('reportings.outstanding_id', 'outstandings.id')
                                                 ->whereNull('reportings.status');
                                         })
-                                        ->pluck('title', 'id')
-                                        ->toArray();
+                                        ->get(['id', 'title', 'date_in'])
+                                        ->mapWithKeys(function (Outstanding $outstanding): array {
+                                            $dateIn = $outstanding->date_in
+                                                ? Carbon::parse($outstanding->date_in)->format('d M Y')
+                                                : '-';
+
+                                            return [
+                                                $outstanding->id => ($outstanding->title ?: '-') . ' (Info: ' . $dateIn . ')',
+                                            ];
+                                        })
+                                        ->all();
 
                                     return !empty($options) ? $options : ['' => 'No Outstanding'];
                                 })
@@ -277,7 +286,7 @@ class OutstandingForm
                                 ->label('Location')
                                 ->options(function () {
                                     $user = auth()->user();
-                                    
+
                                     if ($user->canViewAllSupportTeams() || $user->hasRole('owner')) {
                                         return Location::query()->pluck('name', 'id');
                                     }
@@ -355,7 +364,7 @@ class OutstandingForm
                 ->columnSpan(3),
 
             Group::make()
-                ->schema([         
+                ->schema([
                     Section::make('Status')
                         ->hidden(fn(Get $get) => Location::find($get('location_id'))?->is_ho)
                         ->schema([
@@ -383,7 +392,7 @@ class OutstandingForm
                                 ->native(false)
                                 ->maxDate(now()),
                         ])
-                        ->columns(3),       
+                        ->columns(3),
                     Section::make('Problem Unit')
                         ->hidden(fn(Get $get) => Location::find($get('location_id'))?->is_ho)
                         ->schema([
