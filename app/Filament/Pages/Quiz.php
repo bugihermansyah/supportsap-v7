@@ -6,6 +6,7 @@ use App\Models\QuizAttempt;
 use App\Models\QuizAttemptAnswer;
 use App\Models\QuizQuestionOption;
 use App\Models\QuizSession;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -20,6 +21,7 @@ use UnitEnum;
  */
 class Quiz extends Page
 {
+    use HasPageShield;
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';
 
     protected static string|UnitEnum|null $navigationGroup = 'Quiz';
@@ -39,16 +41,6 @@ class Quiz extends Page
     public int $index = 0;
 
     private ?QuizAttempt $attemptCache = null;
-
-    public static function canAccess(): bool
-    {
-        return (bool) auth()->user()?->hasAnyRole(['support', 'head_support', 'super_admin']);
-    }
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return static::canAccess();
-    }
 
     // ------------------------------------------------------------------
     // Data

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Reports;
 
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use App\Models\Product;
 use Filament\Pages\Page;
 use Filament\Tables\Columns\TextColumn;
@@ -12,6 +13,7 @@ use Filament\Tables\Table;
 
 class ReportSlaVisit extends Page implements HasTable
 {
+    use HasPageShield;
     use InteractsWithTable;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clock';
@@ -147,8 +149,4 @@ class ReportSlaVisit extends Page implements HasTable
             ->defaultSort('name', 'asc');
     }
 
-    public static function canAccess(): bool
-    {
-        return auth()->user()?->hasAnyRole(['head_support', 'helpdesk', 'head_preventive', 'owner', 'preventive']) ?? false;
-    }
 }

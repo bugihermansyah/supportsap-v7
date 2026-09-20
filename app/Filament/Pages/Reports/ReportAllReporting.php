@@ -6,6 +6,7 @@ use App\Models\Location;
 use App\Models\Product;
 use App\Models\Reporting;
 use App\Models\User;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -27,6 +28,7 @@ use pxlrbt\FilamentExcel\Exports\ExcelExport;
 class ReportAllReporting extends Page implements HasTable
 {
     use InteractsWithTable;
+    use HasPageShield;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-magnifying-glass';
 
@@ -391,8 +393,4 @@ class ReportAllReporting extends Page implements HasTable
             ->defaultSort('created_at', 'desc');
     }
 
-    public static function canAccess(): bool
-    {
-        return auth()->user()?->hasAnyRole(['head_support', 'helpdesk']) ?? false;
-    }
 }

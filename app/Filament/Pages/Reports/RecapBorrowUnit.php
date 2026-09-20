@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Reports;
 
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -16,6 +17,7 @@ use pxlrbt\FilamentExcel\Exports\ExcelExport;
 class RecapBorrowUnit extends Page implements HasTable
 {
     use InteractsWithTable;
+    use HasPageShield;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-magnifying-glass';
 
@@ -26,13 +28,6 @@ class RecapBorrowUnit extends Page implements HasTable
     protected static ?string $navigationLabel = 'Recap Borrow Unit';
 
     protected ?string $heading = 'Recap Borrow Unit';
-
-    public static function canAccess(): bool
-    {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        return $user->hasRole(['super_admin', 'admin']);
-    }
 
     public function table(Table $table): Table
     {

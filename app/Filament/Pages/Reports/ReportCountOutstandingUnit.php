@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Reports;
 
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use App\Models\Unit;
 use Filament\Pages\Page;
 use Filament\Tables\Columns\TextColumn;
@@ -11,6 +12,7 @@ use Filament\Tables\Table;
 
 class ReportCountOutstandingUnit extends Page implements HasTable
 {
+    use HasPageShield;
     use InteractsWithTable;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-table-cells';
@@ -110,8 +112,4 @@ class ReportCountOutstandingUnit extends Page implements HasTable
             ->defaultSort('outstandings_count', 'desc');
     }
 
-    public static function canAccess(): bool
-    {
-        return auth()->user()?->hasAnyRole(['head_support', 'helpdesk']) ?? false;
-    }
 }

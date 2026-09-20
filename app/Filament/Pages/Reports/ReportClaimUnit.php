@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Reports;
 
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -14,6 +15,7 @@ use pxlrbt\FilamentExcel\Exports\ExcelExport;
 class ReportClaimUnit extends Page implements HasTable
 {
     use InteractsWithTable;
+    use HasPageShield;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-magnifying-glass';
     
@@ -24,11 +26,6 @@ class ReportClaimUnit extends Page implements HasTable
     protected static ?string $navigationLabel = 'Report Claim Unit';
 
     protected ?string $heading = 'Report Claim Unit';
-
-    public static function canAccess(): bool
-    {
-        return auth()->user()?->hasRole(['super_admin', 'admin']) ?? false;
-    }
 
     public function table(Table $table): Table
     {

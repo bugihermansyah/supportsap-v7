@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Announcement;
 use App\Models\AnnouncementRead;
 use App\Models\User;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -17,6 +18,7 @@ use UnitEnum;
  */
 class Announcements extends Page
 {
+    use HasPageShield;
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-megaphone';
 
     protected static string|UnitEnum|null $navigationGroup = 'Work';
@@ -31,11 +33,6 @@ class Announcements extends Page
     protected static ?string $slug = 'pengumuman';
 
     protected string $view = 'filament.pages.announcements';
-
-    public static function canAccess(): bool
-    {
-        return auth()->check();
-    }
 
     public static function getNavigationBadge(): ?string
     {

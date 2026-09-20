@@ -3,11 +3,13 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Widgets\CalendarWidget;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 
 class ScheduleCalendar extends Page
 {
+    use HasPageShield;
 
     protected static ?string $navigationLabel = 'Schedule Calendar';
 

@@ -3,11 +3,13 @@
 namespace App\Filament\Pages\Reports;
 
 use App\Filament\Widgets\Report\MonthlyTeamReportChart;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 
 class MonthlyTeamReport extends Page
 {
+    use HasPageShield;
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
     protected static ?string $title = 'Monthly Team Report';
@@ -30,8 +32,4 @@ class MonthlyTeamReport extends Page
         return 1;
     }
 
-    public static function canAccess(): bool
-    {
-        return auth()->user()?->hasAnyRole(['helpdesk', 'head_support']);
-    }
 }

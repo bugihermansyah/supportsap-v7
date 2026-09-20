@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Reports;
 use App\Enums\ReportingState;
 use App\Models\Reporting;
 use App\Models\Team;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
@@ -31,6 +32,7 @@ use Illuminate\Support\Collection;
 class ClientNotificationReport extends Page implements HasTable
 {
     use InteractsWithTable;
+    use HasPageShield;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-envelope-open';
 
@@ -61,18 +63,6 @@ class ClientNotificationReport extends Page implements HasTable
     //         .Carbon::parse(static::EFFECTIVE_FROM)->translatedFormat('d F Y')
     //         .'. Laporan sebelum tanggal itu tidak dihitung.';
     // }
-
-    public static function canAccess(): bool
-    {
-        return (bool) auth()->user()?->hasAnyRole([
-            'manager', 'owner', 'admin', 'super_admin', 'helpdesk', 'head_support',
-        ]);
-    }
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return static::canAccess();
-    }
 
     public function table(Table $table): Table
     {

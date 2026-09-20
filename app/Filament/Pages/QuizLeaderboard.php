@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\QuizAttempt;
 use App\Models\QuizSession;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use UnitEnum;
@@ -14,6 +15,7 @@ use UnitEnum;
  */
 class QuizLeaderboard extends Page
 {
+    use HasPageShield;
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-trophy';
 
     protected static string|UnitEnum|null $navigationGroup = 'Quiz';
@@ -30,18 +32,6 @@ class QuizLeaderboard extends Page
     public ?string $sessionId = null;
 
     private ?QuizSession $sessionCache = null;
-
-    public static function canAccess(): bool
-    {
-        return (bool) auth()->user()?->hasAnyRole([
-            'support', 'head_support', 'helpdesk', 'manager', 'admin', 'super_admin',
-        ]);
-    }
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return static::canAccess();
-    }
 
     public function mount(): void
     {
