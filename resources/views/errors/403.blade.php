@@ -119,14 +119,34 @@
             color: #201a0d;
             font-size: 0.94rem;
             font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
             text-decoration: none;
             transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .action--secondary {
+            border-color: var(--line);
+            background: transparent;
+            color: var(--ink);
         }
 
         .action:hover {
             background: #d3b873;
             box-shadow: 0 8px 18px rgba(146, 118, 54, 0.2);
             transform: translateY(-1px);
+        }
+
+        .action--secondary:hover {
+            border-color: #c8ced6;
+            background: #f7f8fa;
+            box-shadow: 0 8px 18px rgba(31, 43, 58, 0.08);
         }
 
         .action:focus-visible {
@@ -182,12 +202,22 @@
             <h1 id="error-title">Akses ke halaman ini ditolak</h1>
             <p class="message">
                 Anda tidak memiliki permission yang diperlukan untuk membuka halaman tersebut.
-                Silakan kembali ke beranda untuk melanjutkan pekerjaan.
+                Silakan kembali ke halaman sebelumnya atau beranda untuk melanjutkan pekerjaan.
             </p>
-            <a class="action" href="{{ $homeUrl }}">
-                <span class="action__arrow" aria-hidden="true">←</span>
-                <span>Kembali ke Beranda</span>
-            </a>
+            <div class="actions">
+                <button
+                    class="action action--secondary"
+                    type="button"
+                    onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = @js($homeUrl); }"
+                >
+                    <span class="action__arrow" aria-hidden="true">←</span>
+                    <span>Kembali</span>
+                </button>
+                <a class="action" href="{{ $homeUrl }}">
+                    <span>Beranda</span>
+                    <span class="action__arrow" aria-hidden="true">→</span>
+                </a>
+            </div>
         </div>
     </main>
 </body>
