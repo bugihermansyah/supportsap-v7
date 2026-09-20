@@ -11,6 +11,9 @@ use App\Models\Reporting;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -291,10 +294,23 @@ class Schedules extends TableWidget
                     ->required(fn (Get $get) => ! $this->isHoLocation($get('location_id')))
                     ->hidden(fn (Get $get) => $this->isHoLocation($get('location_id'))),
 
-                TextInput::make('title')
-                    ->label('Problem (Title)')
-                    ->maxLength(100)
-                    ->required()
+                Repeater::make('problems')
+                    ->label('Problem')
+                    ->reorderable(false)
+                    ->defaultItems(1)
+                    ->minItems(1)
+                    ->compact()
+                    ->table([
+                        TableColumn::make('Title'),
+                    ])
+                    ->schema([
+                        TextInput::make('title')
+                            ->hiddenLabel()
+                            ->maxLength(100)
+                            ->required(),
+                        Hidden::make('level')
+                            ->default(3),
+                    ])
                     ->columnSpanFull(),
 
                 Select::make('user_id')
@@ -327,10 +343,27 @@ class Schedules extends TableWidget
             ->action(fn (array $data) => $this->createTicket($data));
     }
 
-    /** Buat outstanding, lalu buat jadwal hanya bila PIC Support dipilih. */
+    /** Buat satu outstanding untuk setiap problem, lalu jadwal bila PIC dipilih. */
     protected function createTicket(array $data): void
     {
         $location = Location::find($data['location_id'] ?? null);
+        $problems = collect((array) ($data['problems'] ?? []))
+            ->map(function ($problem): array {
+                if (! is_array($problem)) {
+                    return [
+                        'title' => trim((string) $problem),
+                        'level' => 3,
+                    ];
+                }
+
+                return [
+                    'title' => trim((string) ($problem['title'] ?? '')),
+                    'level' => max(1, min(5, (int) ($problem['level'] ?? 3))),
+                ];
+            })
+            ->filter(fn (array $problem): bool => filled($problem['title']))
+            ->values()
+            ->all();
         $requestedPicIds = collect((array) ($data['user_id'] ?? []))
             ->filter()
             ->unique()
@@ -346,6 +379,16 @@ class Schedules extends TableWidget
         if (! $location) {
             Notification::make()
                 ->title('Lokasi tidak ditemukan')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        if (! $problems) {
+            Notification::make()
+                ->title('Problem wajib diisi')
+                ->body('Tambahkan minimal satu problem sebelum menyimpan.')
                 ->danger()
                 ->send();
 
@@ -376,55 +419,59 @@ class Schedules extends TableWidget
         $today = now()->toDateString();
         $reporter = $isHo ? 'support' : ($data['reporter'] ?? 'client');
         $reporterName = $isHo ? auth()->user()->name : ($data['reporter_name'] ?? '');
-        $lpm = 0;
+        $outstandings = [];
+        $reportings = [];
 
-        if (! $isHo && $reporter === 'client') {
-            $lpm = Outstanding::where('location_id', $location->id)
-                ->whereDate('date_in', $today)
-                ->where('lpm', 1)
-                ->exists() ? 0 : 1;
-        }
+        DB::transaction(function () use ($data, $location, $isHo, $today, $reporter, $reporterName, $problems, $picIds, $dateVisit, &$outstandings, &$reportings): void {
+            foreach ($problems as $problem) {
+                $lpm = 0;
 
-        $outstanding = null;
-        $reporting = null;
+                if (! $isHo && $reporter === 'client') {
+                    $lpm = Outstanding::where('location_id', $location->id)
+                        ->whereDate('date_in', $today)
+                        ->where('lpm', 1)
+                        ->exists() ? 0 : 1;
+                }
 
-        DB::transaction(function () use ($data, $location, $today, $reporter, $reporterName, $lpm, $picIds, $dateVisit, &$outstanding, &$reporting): void {
-            $outstanding = Outstanding::create([
-                'number' => 'SP-'.now()->format('ym').random_int(100000, 999999),
-                'user_id' => auth()->id(),
-                'location_id' => $location->id,
-                'team_id' => $location->team_id,
-                'product_id' => $data['product_id'] ?? null,
-                'reporter' => $reporter,
-                'reporter_name' => $reporterName,
-                'title' => $data['title'],
-                'level' => $data['level'] ?? 3,
-                'is_type_problem' => OutstandingTypeProblem::NON->value,
-                'date_in' => $today,
-                'date_visit' => $picIds ? $dateVisit : null,
-                'status' => '0',
-                'lpm' => $lpm,
-            ]);
+                $outstanding = Outstanding::create([
+                    'number' => 'SP-'.now()->format('ym').random_int(100000, 999999),
+                    'user_id' => auth()->id(),
+                    'location_id' => $location->id,
+                    'team_id' => $location->team_id,
+                    'product_id' => $data['product_id'] ?? null,
+                    'reporter' => $reporter,
+                    'reporter_name' => $reporterName,
+                    'title' => $problem['title'],
+                    'level' => $problem['level'],
+                    'is_type_problem' => OutstandingTypeProblem::NON->value,
+                    'date_in' => $today,
+                    'date_visit' => $picIds ? $dateVisit : null,
+                    'status' => '0',
+                    'lpm' => $lpm,
+                ]);
+                $outstandings[] = $outstanding;
 
-            if (! $picIds) {
-                return;
+                if (! $picIds) {
+                    continue;
+                }
+
+                $reporting = Reporting::create([
+                    'outstanding_id' => $outstanding->id,
+                    'date_visit' => $dateVisit,
+                    'status' => null,
+                    'email_to' => $location->customers()->wherePivot('is_to', true)->pluck('email')->toArray(),
+                    'email_cc' => $location->customers()->wherePivot('is_to', false)->pluck('email')->toArray(),
+                ]);
+
+                $reporting->users()->attach($picIds);
+                $reportings[] = $reporting;
             }
-
-            $reporting = Reporting::create([
-                'outstanding_id' => $outstanding->id,
-                'date_visit' => $dateVisit,
-                'status' => null,
-                'email_to' => $location->customers()->wherePivot('is_to', true)->pluck('email')->toArray(),
-                'email_cc' => $location->customers()->wherePivot('is_to', false)->pluck('email')->toArray(),
-            ]);
-
-            $reporting->users()->attach($picIds);
         });
 
-        if (! $reporting) {
+        if (! $reportings) {
             Notification::make()
                 ->title('Ticket berhasil dibuat!')
-                ->body('Menunggu Head Support untuk assign jadwal.')
+                ->body(count($outstandings).' outstanding menunggu Head Support untuk assign jadwal.')
                 ->success()
                 ->send();
 
@@ -434,36 +481,38 @@ class Schedules extends TableWidget
         $assignedUsers = User::whereIn('id', $picIds)->get();
         $supportEmails = $assignedUsers->pluck('email')->filter()->values()->all();
 
-        if ($supportEmails && class_exists(\App\Jobs\ScheduleMailJob::class)) {
-            \App\Jobs\ScheduleMailJob::dispatch(
-                $supportEmails,
-                $dateVisit,
-                $location->company->alias ?? 'SAP',
-                $location->name,
-                $outstanding->title,
-                $outstanding->reporter ?? '-',
-                $outstanding->reporter_name ?? '-'
-            )->onQueue('scheduleEmails');
-        }
+        foreach ($outstandings as $outstanding) {
+            if ($supportEmails && class_exists(\App\Jobs\ScheduleMailJob::class)) {
+                \App\Jobs\ScheduleMailJob::dispatch(
+                    $supportEmails,
+                    $dateVisit,
+                    $location->company->alias ?? 'SAP',
+                    $location->name,
+                    $outstanding->title,
+                    $outstanding->reporter ?? '-',
+                    $outstanding->reporter_name ?? '-'
+                )->onQueue('scheduleEmails');
+            }
 
-        foreach ($assignedUsers as $assignedUser) {
-            Notification::make()
-                ->title('Jadwal baru')
-                ->body("Jadwal baru di {$location->name} untuk problem: {$outstanding->title} pada {$dateVisit}")
-                ->info()
-                ->actions([
-                    Action::make('view')
-                        ->label('Lihat Jadwal')
-                        ->url(route('filament.admin.pages.schedule-dashboard'))
-                        ->markAsRead()
-                        ->button(),
-                ])
-                ->sendToDatabase($assignedUser);
+            foreach ($assignedUsers as $assignedUser) {
+                Notification::make()
+                    ->title('Jadwal baru')
+                    ->body("Jadwal baru di {$location->name} untuk problem: {$outstanding->title} pada {$dateVisit}")
+                    ->info()
+                    ->actions([
+                        Action::make('view')
+                            ->label('Lihat Jadwal')
+                            ->url(route('filament.admin.pages.schedule-dashboard'))
+                            ->markAsRead()
+                            ->button(),
+                    ])
+                    ->sendToDatabase($assignedUser);
+            }
         }
 
         Notification::make()
             ->title('Ticket berhasil dibuat dan jadwal dibuat!')
-            ->body("PIC sudah ditugaskan untuk {$dateVisit}.")
+            ->body(count($outstandings).' outstanding dijadwalkan untuk '.$dateVisit.'.')
             ->success()
             ->send();
     }
