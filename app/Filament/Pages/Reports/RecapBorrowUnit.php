@@ -2,13 +2,22 @@
 
 namespace App\Filament\Pages\Reports;
 
+use App\Enums\BorrowRequestStatus;
+use App\Models\Location;
+use App\Models\User;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
+use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use App\Models\Unit;
 use Filament\Tables\Columns\TextColumn;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use pxlrbt\FilamentExcel\Actions\ExportAction;
@@ -52,6 +61,73 @@ class RecapBorrowUnit extends Page implements HasTable
                     ->label('Qty')
                     ->sortable(),
             ])
+            ->filters([
+                SelectFilter::make('requester')
+                    ->label('Requester')
+                    ->options(fn (): array => User::query()
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->searchable()
+                    ->preload()
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['value'] ?? null,
+                            fn (Builder $query, $requesterId): Builder => $query->where('borrow_requests.requester_id', $requesterId)
+                        );
+                    }),
+                SelectFilter::make('location')
+                    ->label('Location')
+                    ->options(fn (): array => Location::query()
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->searchable()
+                    ->preload()
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['value'] ?? null,
+                            fn (Builder $query, $locationId): Builder => $query->where('borrow_requests.location_id', $locationId)
+                        );
+                    }),
+                Filter::make('approved_from')
+                    ->schema([
+                        DatePicker::make('approved_from')
+                            ->label('From Date Request')
+                            ->default(now()->startOfMonth()->toDateString()),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['approved_from'] ?? null,
+                            fn (Builder $query, $date): Builder => $query->whereExists(function (QueryBuilder $q) use ($date) {
+                                $q->select(DB::raw(1))
+                                    ->from('borrow_request_logs')
+                                    ->whereColumn('borrow_request_logs.borrow_request_id', 'borrow_requests.id')
+                                    ->where('action', BorrowRequestStatus::Approved->value)
+                                    ->whereDate('created_at', '>=', $date);
+                            })
+                        );
+                    }),
+                Filter::make('approved_until')
+                    ->schema([
+                        DatePicker::make('approved_until')
+                            ->label('Until Date Request')
+                            ->default(now()->endOfMonth()->toDateString()),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['approved_until'] ?? null,
+                            fn (Builder $query, $date): Builder => $query->whereExists(function (QueryBuilder $q) use ($date) {
+                                $q->select(DB::raw(1))
+                                    ->from('borrow_request_logs')
+                                    ->whereColumn('borrow_request_logs.borrow_request_id', 'borrow_requests.id')
+                                    ->where('action', BorrowRequestStatus::Approved->value)
+                                    ->whereDate('created_at', '<=', $date);
+                            })
+                        );
+                    }),
+            ], layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(4)
             ->defaultSort('unit_name', 'asc')
             ->headerActions([
                 ExportAction::make()->exports([

@@ -189,7 +189,8 @@ class BorrowRequestStatusReport extends Page implements HasTable
                 Filter::make('approved_from')
                     ->schema([
                         DatePicker::make('approved_from')
-                            ->label('From Date Request'),
+                            ->label('From Date Request')
+                            ->default(now()->startOfMonth()->toDateString()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query->when(
@@ -203,7 +204,8 @@ class BorrowRequestStatusReport extends Page implements HasTable
                 Filter::make('approved_until')
                     ->schema([
                         DatePicker::make('approved_until')
-                            ->label('Until Date Request'),
+                            ->label('Until Date Request')
+                            ->default(now()->endOfMonth()->toDateString()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query->when(
@@ -217,7 +219,6 @@ class BorrowRequestStatusReport extends Page implements HasTable
             ], layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(4)
             ->defaultSort('created_at', 'desc')
-            ->persistFiltersInSession()
             ->headerActions([
                 ExportAction::make()->exports([
                     ExcelExport::make()

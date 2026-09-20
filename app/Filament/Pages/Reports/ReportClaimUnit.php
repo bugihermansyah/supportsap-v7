@@ -2,13 +2,19 @@
 
 namespace App\Filament\Pages\Reports;
 
+use App\Enums\BorrowRequestStatus;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
+use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use App\Models\BorrowRequestUnit;
 use Filament\Tables\Columns\TextColumn;
+use Illuminate\Database\Eloquent\Builder;
 use pxlrbt\FilamentExcel\Actions\ExportAction;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
@@ -66,6 +72,49 @@ class ReportClaimUnit extends Page implements HasTable
                     ->date('d M Y')
                     ->sortable(),
             ])
+            ->filters([
+                SelectFilter::make('requester')
+                    ->label('Requester')
+                    ->relationship('borrowRequest.requester', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('location')
+                    ->label('Location')
+                    ->relationship('borrowRequest.location', 'name')
+                    ->searchable()
+                    ->preload(),
+                Filter::make('approved_from')
+                    ->schema([
+                        DatePicker::make('approved_from')
+                            ->label('From Date Request')
+                            ->default(now()->startOfMonth()->toDateString()),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['approved_from'] ?? null,
+                            fn (Builder $query, $date): Builder => $query->whereHas('borrowRequest.logs', function (Builder $q) use ($date) {
+                                $q->where('action', BorrowRequestStatus::Approved->value)
+                                    ->whereDate('created_at', '>=', $date);
+                            })
+                        );
+                    }),
+                Filter::make('approved_until')
+                    ->schema([
+                        DatePicker::make('approved_until')
+                            ->label('Until Date Request')
+                            ->default(now()->endOfMonth()->toDateString()),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['approved_until'] ?? null,
+                            fn (Builder $query, $date): Builder => $query->whereHas('borrowRequest.logs', function (Builder $q) use ($date) {
+                                $q->where('action', BorrowRequestStatus::Approved->value)
+                                    ->whereDate('created_at', '<=', $date);
+                            })
+                        );
+                    }),
+            ], layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(4)
             ->defaultSort('created_at', 'desc')
             ->headerActions([
                 ExportAction::make()->exports([
