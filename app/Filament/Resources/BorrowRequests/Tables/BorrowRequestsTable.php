@@ -20,9 +20,9 @@ class BorrowRequestsTable
             ->modifyQueryUsing(function (\Illuminate\Database\Eloquent\Builder $query) {
                 $user = auth()->user();
                 if ($user) {
-                    if ($user->hasRole('support') && !$user->hasRole('head_support')) {
+                    if ($user->hasRole('support') && !$user->hasRole('head_support') && ! $user->isSupportHo()) {
                         $query->where('requester_id', $user->id);
-                    } elseif ($user->hasRole('head_support')) {
+                    } elseif ($user->hasRole('head_support') && ! $user->isSupportHo() && $user->team_id) {
                         $query->where(function ($q) use ($user) {
                             $q->whereHas('location', function ($locQ) use ($user) {
                                 $locQ->where('team_id', $user->team_id);
@@ -87,7 +87,7 @@ class BorrowRequestsTable
             ->filters([
                 SelectFilter::make('requester_id')
                     ->label('Requester')
-                    ->relationship('requester', 'name', fn (\Illuminate\Database\Eloquent\Builder $query) => $query->role(['head_support', 'support'])->where('status', 1))
+                    ->relationship('requester', 'name', fn (\Illuminate\Database\Eloquent\Builder $query) => $query->role(['head_support', 'support', 'support_ho'])->where('status', 1))
                     ->searchable()
                     ->preload()
                     ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'super_admin'])),
@@ -95,7 +95,7 @@ class BorrowRequestsTable
                     ->label('Location')
                     ->relationship('location', 'name', function (\Illuminate\Database\Eloquent\Builder $query) {
                         $user = auth()->user();
-                        if (! $user?->hasAnyRole(['admin', 'super_admin'])) {
+                        if ($user && ! $user->canViewAllSupportTeams()) {
                             $query->where('team_id', $user?->team_id);
                         }
                         return $query;

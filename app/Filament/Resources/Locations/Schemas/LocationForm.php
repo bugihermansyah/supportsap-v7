@@ -79,7 +79,7 @@ class LocationForm
                                     ->label('Pic')
                                     ->preload()
                                     ->searchable()
-                                    ->options(User::role(['head_support', 'support'])->where('status', '!=', 0)->pluck('name', 'id')),
+                                    ->options(User::role(['head_support', 'support', 'support_ho'])->where('status', '!=', 0)->pluck('name', 'id')),
                                 Select::make('status')
                                     ->options(LocationStatus::class)
                                     ->required(),

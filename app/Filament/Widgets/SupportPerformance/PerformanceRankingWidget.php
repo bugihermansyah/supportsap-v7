@@ -35,7 +35,7 @@ class PerformanceRankingWidget extends BaseWidget
 
         // Team scoping based on role
         $currentUser = auth()->user();
-        if ($currentUser->hasRole('head_support')) {
+        if ($currentUser->hasRole('head_support') && ! $currentUser->isSupportHo()) {
             $teamId = $currentUser->team_id; // force own team
         }
 
@@ -52,7 +52,7 @@ class PerformanceRankingWidget extends BaseWidget
 
         return $table
             ->query(
-                User::role(['support', 'head_support'])
+                User::role(['support', 'head_support', 'support_ho'])
                     // select() harus mendahului withCount/withAvg/addSelect di bawah:
                     // select() menimpa daftar kolom, addSelect() menambah.
                     ->select('users.*')

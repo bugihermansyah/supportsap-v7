@@ -57,7 +57,7 @@ class OutstandingResource extends Resource
 
         $user = auth()->user();
 
-        if ($user && $user->hasAnyRole(['head_support', 'support'])) {
+        if ($user?->hasTeamScopedSupportRole() && $user->team_id) {
             $query->whereHas('location', fn ($q) => $q->where('team_id', $user->team_id));
         }
 

@@ -48,7 +48,7 @@ class SupportPerformance extends BaseDashboard
                             ->label('Team')
                             ->options(Team::pluck('name', 'id'))
                             ->searchable()
-                            ->visible(fn () => auth()->user()->hasAnyRole(['manager', 'super_admin', 'helpdesk'])),
+                            ->visible(fn () => auth()->user()->hasAnyRole(['manager', 'super_admin', 'helpdesk', 'support_ho'])),
                         // Filter Support / Customer / Location dihapus: tidak dibutuhkan.
                         // Kode pembacaannya di widget ikut dibuang, jadi halaman ini
                         // hanya disaring lewat tanggal dan team.

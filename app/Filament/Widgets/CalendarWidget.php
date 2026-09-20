@@ -27,7 +27,7 @@ class CalendarWidget extends FilamentCalendarWidget
             ]);
 
         $currentUser = auth()->user();
-        if ($currentUser && $currentUser->hasRole(['head_support', 'support'])) {
+        if ($currentUser?->hasTeamScopedSupportRole() && $currentUser->team_id) {
             $teamId = $currentUser->team_id;
             $query->whereHas('users', function ($q) use ($teamId) {
                 $q->where('users.team_id', $teamId);
@@ -49,7 +49,7 @@ class CalendarWidget extends FilamentCalendarWidget
                 $locationName = $reporting->outstanding?->location?->name ?? 'No Location';
 
                 $users = $reporting->users;
-                if ($currentUser && $currentUser->hasRole(['head_support', 'support'])) {
+                if ($currentUser?->hasTeamScopedSupportRole() && $currentUser->team_id) {
                     $users = $users->where('team_id', $currentUser->team_id);
                 }
 

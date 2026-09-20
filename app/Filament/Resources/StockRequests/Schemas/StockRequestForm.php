@@ -50,7 +50,7 @@ class StockRequestForm
 
                                         $user = auth()->user();
 
-                                        if ($user && $user->hasAnyRole(['head_support', 'support'])) {
+                                        if ($user?->hasTeamScopedSupportRole() && $user->team_id) {
                                             $query->where(fn ($q) => $q
                                                 ->where('team_id', $user->team_id)
                                                 ->orWhere('area_status', 'out'));

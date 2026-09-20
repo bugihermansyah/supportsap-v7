@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Model;
  * Pembagian peran mengikuti BorrowRequest:
  *   - admin & helpdesk  -> pengelola gudang (approve, keluarkan, terima retur)
  *   - head_support & support -> requester, hanya melihat requestnya sendiri/timnya
+ *   - support_ho -> requester lintas semua team
  */
 class StockRequestResource extends Resource
 {
@@ -76,7 +77,11 @@ class StockRequestResource extends Resource
             return $query;
         }
 
-        if ($user->hasRole('head_support')) {
+        if ($user->isSupportHo()) {
+            return $query;
+        }
+
+        if ($user->hasRole('head_support') && $user->team_id) {
             return $query->where(fn (Builder $q) => $q
                 ->whereHas('location', fn (Builder $loc) => $loc->where('team_id', $user->team_id))
                 ->orWhere(fn (Builder $q2) => $q2

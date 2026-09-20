@@ -45,7 +45,7 @@ class EngineerGridWidget extends Widget
 
         // Team scoping based on role
         $currentUser = auth()->user();
-        if ($currentUser->hasRole('head_support')) {
+        if ($currentUser->hasRole('head_support') && ! $currentUser->isSupportHo()) {
             $teamId = $currentUser->team_id; // force own team
         }
 
@@ -60,7 +60,7 @@ class EngineerGridWidget extends Widget
             }
         };
 
-        $engineers = User::role(['support', 'head_support'])
+        $engineers = User::role(['support', 'head_support', 'support_ho'])
             // select() harus mendahului withCount/withAvg/addSelect: select() menimpa
             // daftar kolom, addSelect() menambah.
             ->select('users.*')

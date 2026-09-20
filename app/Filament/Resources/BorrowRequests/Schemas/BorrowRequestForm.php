@@ -58,7 +58,7 @@ class BorrowRequestForm
                                         $query->with('company');
                                         $query->where('status', '!=', LocationStatus::InActive);
                                         $user = auth()->user();
-                                        if ($user && $user->hasRole(['head_support', 'support'])) {
+                                        if ($user?->hasTeamScopedSupportRole() && $user->team_id) {
                                             $query->where(function ($q) use ($user) {
                                                 $q->where('team_id', $user->team_id)
                                                   ->orWhere('area_status', 'out');

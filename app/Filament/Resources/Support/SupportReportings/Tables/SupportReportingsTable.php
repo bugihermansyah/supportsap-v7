@@ -20,7 +20,7 @@ class SupportReportingsTable
         return $table
             ->modifyQueryUsing(function (Builder $query) {
                 $user = auth()->user();
-                if ($user && $user->hasAnyRole(['head_support', 'support'])) {
+                if ($user?->hasTeamScopedSupportRole() && $user->team_id) {
                     $query->whereHas('users', function ($q) use ($user) {
                         $q->where('team_id', $user->team_id);
                     });

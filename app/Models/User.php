@@ -64,6 +64,32 @@ class User extends Authenticatable implements Commenter, FilamentUser
         return $this->status != 0;
     }
 
+    /**
+     * Head-office support is a support role without a primary team.
+     * Its visibility must therefore be determined by the role, not by
+     * the nullable team_id column.
+     */
+    public function isSupportHo(): bool
+    {
+        return $this->hasRole('support_ho');
+    }
+
+    /**
+     * True only for support users whose data must be limited to their team.
+     */
+    public function hasTeamScopedSupportRole(): bool
+    {
+        return $this->hasAnyRole(['support', 'head_support']) && ! $this->isSupportHo();
+    }
+
+    /**
+     * Roles allowed to see support data across all teams.
+     */
+    public function canViewAllSupportTeams(): bool
+    {
+        return $this->hasAnyRole(['support_ho', 'helpdesk', 'admin', 'super_admin', 'owner']);
+    }
+
     public function getAvatarUrlAttribute()
     {
         return null;

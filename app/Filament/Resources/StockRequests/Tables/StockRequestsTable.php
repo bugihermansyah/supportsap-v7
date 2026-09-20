@@ -68,7 +68,7 @@ class StockRequestsTable
                         'name',
                         fn (Builder $query) => $query->whereHas(
                             'roles',
-                            fn (Builder $roles) => $roles->whereIn('name', ['head_support', 'support']),
+                            fn (Builder $roles) => $roles->whereIn('name', ['head_support', 'support', 'support_ho']),
                         )->where('status', 1),
                     )
                     ->searchable()
@@ -88,7 +88,7 @@ class StockRequestsTable
                     ->relationship('location', 'name', function (Builder $query) {
                         $user = auth()->user();
 
-                        if ($user && ! StockRequestResource::isManager()) {
+                        if ($user && ! StockRequestResource::isManager() && ! $user->canViewAllSupportTeams()) {
                             $query->where('team_id', $user->team_id);
                         }
 

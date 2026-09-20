@@ -63,7 +63,7 @@ class OutstandingForm
                                 ->options(function () {
                                     $user = auth()->user();
                                     
-                                    if ($user->hasAnyRole(['super_admin', 'admin', 'owner'])) {
+                                    if ($user->canViewAllSupportTeams() || $user->hasRole('owner')) {
                                         return Location::with('company')->get()->pluck('full_name', 'id');
                                     }
 
@@ -278,7 +278,7 @@ class OutstandingForm
                                 ->options(function () {
                                     $user = auth()->user();
                                     
-                                    if ($user->hasAnyRole(['super_admin', 'admin', 'owner'])) {
+                                    if ($user->canViewAllSupportTeams() || $user->hasRole('owner')) {
                                         return Location::query()->pluck('name', 'id');
                                     }
 
