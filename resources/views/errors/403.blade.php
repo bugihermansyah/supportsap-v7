@@ -57,17 +57,6 @@
             color: #fff;
         }
 
-        .error-card__top::after {
-            position: absolute;
-            right: 30px;
-            bottom: -18px;
-            width: 76px;
-            height: 76px;
-            border: 1px solid rgba(199, 170, 98, 0.35);
-            border-radius: 50%;
-            content: "";
-        }
-
         .brand {
             display: inline-flex;
             align-items: center;
@@ -159,10 +148,6 @@
             .error-card__body {
                 padding-left: 24px;
                 padding-right: 24px;
-            }
-
-            .error-card__top::after {
-                right: 18px;
             }
 
             .action {
