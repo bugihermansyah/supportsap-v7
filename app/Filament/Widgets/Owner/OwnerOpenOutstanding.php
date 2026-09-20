@@ -97,6 +97,14 @@ class OwnerOpenOutstanding extends TableWidget
                     ->wrap()
                     ->sortable()
                     ->placeholder('-'),
+                TextColumn::make('outstanding.note')
+                    ->label('Note')
+                    ->formatStateUsing(fn ($state) => filled($state) ? trim(strip_tags((string) $state)) : null)
+                    ->wrap()
+                    ->limit(100)
+                    ->tooltip(fn ($state) => filled($state) ? trim(strip_tags((string) $state)) : null)
+                    ->searchable()
+                    ->placeholder('-'),
             ])
             ->recordUrl(fn ($record) => route('filament.admin.resources.outstandings.edit', ['record' => $record->outstanding->id]))
             ->filters([
