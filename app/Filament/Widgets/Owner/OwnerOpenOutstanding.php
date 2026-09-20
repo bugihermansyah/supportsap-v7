@@ -8,6 +8,8 @@ use App\Models\Reporting;
 use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Carbon\Carbon;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\ViewAction;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -104,7 +106,22 @@ class OwnerOpenOutstanding extends TableWidget
                     ->limit(100)
                     ->tooltip(fn ($state) => filled($state) ? trim(strip_tags((string) $state)) : null)
                     ->searchable()
-                    ->placeholder('-'),
+                    ->placeholder('-')
+                    ->action(
+                        ViewAction::make('viewNote')
+                            ->label('View Note')
+                            ->modalHeading('Outstanding Note')
+                            ->schema([
+                                TextEntry::make('note')
+                                    ->label('Note')
+                                    ->html()
+                                    ->placeholder('-')
+                                    ->columnSpanFull(),
+                            ])
+                            ->mutateRecordDataUsing(fn (array $data, Reporting $record): array => [
+                                'note' => $record->outstanding?->note,
+                            ]),
+                    ),
             ])
             ->recordUrl(fn ($record) => route('filament.admin.resources.outstandings.edit', ['record' => $record->outstanding->id]))
             ->filters([
