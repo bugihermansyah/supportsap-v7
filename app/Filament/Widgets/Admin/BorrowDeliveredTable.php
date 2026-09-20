@@ -32,7 +32,6 @@ class BorrowDeliveredTable extends BaseWidget
                 BorrowRequestUnit::query()
                     ->whereHas('borrowRequest', function (Builder $query) {
                         $query->whereIn('log_status', [
-                            BorrowRequestStatus::DeliveryScheduled,
                             BorrowRequestStatus::Delivered,
                         ])->whereNotIn('status', [
                             BorrowRequestStatus::WaitingReturn,
