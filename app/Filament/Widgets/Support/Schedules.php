@@ -275,18 +275,6 @@ class Schedules extends TableWidget
                     ->required(fn (Get $get) => ! $this->isHoLocation($get('location_id')))
                     ->hidden(fn (Get $get) => $this->isHoLocation($get('location_id'))),
 
-                Select::make('level')
-                    ->label('Tingkat Kesulitan')
-                    ->options([
-                        1 => 'Very Easy',
-                        2 => 'Easy',
-                        3 => 'Normal',
-                        4 => 'Hard',
-                        5 => 'Very Hard',
-                    ])
-                    ->default(3)
-                    ->required(),
-
                 Select::make('reporter')
                     ->label('Reporter')
                     ->options([
