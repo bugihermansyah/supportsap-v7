@@ -6,7 +6,10 @@ use App\Enums\OutstandingStatus;
 use App\Enums\ReportStatus;
 use App\Models\Reporting;
 use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
+use Filament\Forms\Components\RichEditor;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -121,7 +124,36 @@ class HeadSupportOpenOutstanding extends TableWidget
                     ->limit(100)
                     ->tooltip(fn ($state) => filled($state) ? trim(strip_tags((string) $state)) : null)
                     ->searchable()
-                    ->placeholder('-'),
+                    ->placeholder('-')
+                    ->action(
+                        Action::make('editNote')
+                            ->label('Edit Note')
+                            ->modalHeading('Edit Note')
+                            ->schema([
+                                RichEditor::make('note')
+                                    ->label('Note')
+                                    ->columnSpanFull(),
+                            ])
+                            ->fillForm(fn (Reporting $record): array => [
+                                'note' => $record->outstanding?->note,
+                            ])
+                            ->action(function (Reporting $record, array $data): void {
+                                $outstanding = $record->outstanding;
+
+                                if (! $outstanding) {
+                                    return;
+                                }
+
+                                $outstanding->update([
+                                    'note' => $data['note'] ?? null,
+                                ]);
+
+                                Notification::make()
+                                    ->success()
+                                    ->title('Note berhasil diperbarui')
+                                    ->send();
+                            }),
+                    ),
             ])
             ->recordUrl(fn ($record) => route('filament.admin.resources.outstandings.edit', ['record' => $record->outstanding->id]))
             ->filters([
