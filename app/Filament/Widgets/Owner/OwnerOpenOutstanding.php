@@ -112,14 +112,12 @@ class OwnerOpenOutstanding extends TableWidget
                             ->label('View Note')
                             ->modalHeading('Outstanding Note')
                             ->schema([
-                                TextEntry::make('note')
+                                TextEntry::make('outstanding_note')
                                     ->label('Note')
+                                    ->state(fn (Reporting $record): ?string => $record->outstanding?->note)
                                     ->html()
                                     ->placeholder('-')
                                     ->columnSpanFull(),
-                            ])
-                            ->mutateRecordDataUsing(fn (array $data, Reporting $record): array => [
-                                'note' => $record->outstanding?->note,
                             ]),
                     ),
             ])
