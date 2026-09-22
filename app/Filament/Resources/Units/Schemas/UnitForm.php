@@ -19,19 +19,18 @@ class UnitForm
             ->components([
                 Section::make([
                     FileUpload::make('image')
+                        // ->directory('units')
+                        ->imageEditor()
                         ->image(),
                     TextInput::make('name')
                         ->required(),
                     Select::make('parent_id')
                         ->label('Parent Unit')
-                        ->relationship('parent', 'name', fn (Builder $query, ?Unit $record) =>
-                            $query->when($record, fn (Builder $q) =>
-                                $q->where('id', '!=', $record->id)
-                                  ->where(fn (Builder $sub) =>
-                                      $sub->whereNull('parent_id')
-                                          ->orWhere('parent_id', '!=', $record->id)
-                                  )
+                        ->relationship('parent', 'name', fn (Builder $query, ?Unit $record) => $query->when($record, fn (Builder $q) => $q->where('id', '!=', $record->id)
+                            ->where(fn (Builder $sub) => $sub->whereNull('parent_id')
+                                ->orWhere('parent_id', '!=', $record->id)
                             )
+                        )
                         )
                         ->placeholder('Select parent unit')
                         ->searchable()
@@ -40,7 +39,7 @@ class UnitForm
                         ->displayFormat('d M Y')
                         ->native(false)
                         ->label('Discontinue Date'),
-                ])
+                ]),
             ]);
     }
 }

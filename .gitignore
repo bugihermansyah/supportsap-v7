@@ -23,3 +23,8 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Skema domain dikelola langsung di MySQL, bukan lewat migration.
+# Isi baru di database/ (migration tambahan, skrip DDL di database/sql/)
+# sengaja tidak ikut repo. Berkas yang sudah tracked tidak terpengaruh.
+/database

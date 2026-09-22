@@ -1,0 +1,426 @@
+# Product Requirements Document (PRD)
+
+# Support Travel Distance Calculation
+
+Version : 1.1
+
+Status : Draft
+
+---
+
+# 1. Purpose
+
+## Background
+
+Saat ini Support Report hanya mencatat aktivitas pekerjaan tanpa mengetahui perjalanan yang ditempuh oleh setiap Support.
+
+Akibatnya:
+
+* Tidak terdapat histori perjalanan Support.
+* Perhitungan reimbursement transportasi dilakukan secara manual.
+* Sulit mengetahui total kilometer perjalanan Support.
+* Tidak tersedia data untuk analisis mobilitas Support.
+
+Fitur ini bertujuan untuk menghitung perjalanan setiap Support secara otomatis berdasarkan urutan perpindahan lokasi.
+
+---
+
+# 2. Objectives
+
+* Menghitung jarak tempuh setiap Support.
+* Menyimpan histori perjalanan.
+* Menjadi dasar reimbursement transportasi.
+* Mendukung report dengan banyak Support.
+* Mendukung pekerjaan On Site maupun Remote.
+* Menghindari perhitungan ganda apabila beberapa report berada pada lokasi yang sama.
+
+---
+
+# 3. Scope
+
+Perhitungan dilakukan menggunakan:
+
+* Rumah/Base Support
+* Master Lokasi
+* Urutan perjalanan Support
+* Work Type
+
+Perhitungan tidak menggunakan GPS perangkat.
+Koordinat diambil dari database.
+Provider routing menggunakan OSRM.
+
+---
+
+# 4. Definitions
+
+## Support Report
+
+Aktivitas pekerjaan yang dibuat oleh Support.
+Satu report dapat memiliki lebih dari satu Support.
+
+---
+
+# 5. Work Type
+
+## On Site
+
+Pekerjaan dilakukan di lokasi.
+
+Karakteristik:
+
+* Menghasilkan perjalanan.
+* Mengubah lokasi terakhir.
+* Menghitung jarak.
+
+---
+
+## Remote
+
+Pekerjaan dilakukan tanpa mengunjungi lokasi.
+
+Karakteristik:
+
+* Tidak menghasilkan perjalanan.
+* Distance = 0.
+* Tidak mengubah lokasi terakhir.
+
+---
+
+# 6. Business Rules
+
+## BR-01 Visit Pertama
+
+Jika Support belum memiliki perjalanan On Site pada tanggal tersebut:
+
+Origin:
+Base
+
+Destination:
+Lokasi Report
+
+Perjalanan:
+Base → Lokasi
+
+---
+
+## BR-02 Visit Berikutnya
+
+Jika Support telah memiliki perjalanan sebelumnya:
+
+Origin:
+Lokasi terakhir
+
+Destination:
+Lokasi Report
+
+Perjalanan:
+Lokasi A → Lokasi B
+
+---
+
+## BR-03 Lokasi Sama
+
+Jika lokasi report sama dengan lokasi terakhir Support:
+
+Tidak membuat perjalanan baru.
+
+Distance:
+0 KM
+
+---
+
+## BR-04 Remote
+
+Remote tidak mempengaruhi histori perjalanan.
+
+Contoh:
+08:00
+On Site A
+
+09:00
+Remote
+
+13:00
+On Site B
+
+Perjalanan:
+Base → A
+A → B
+
+---
+
+## BR-05 Multiple Support
+
+Setiap Support dihitung secara independen.
+
+Contoh:
+
+Report
+Lokasi C
+
+Support:
+
+A
+
+B
+
+Histori:
+
+Support A
+
+A → C
+
+Support B
+
+B → C
+
+Distance yang dihasilkan dapat berbeda.
+
+---
+
+## BR-06 Snapshot
+
+Saat perhitungan selesai sistem menyimpan snapshot:
+
+* Origin
+* Destination
+* Koordinat Origin
+* Koordinat Destination
+* Distance
+* Duration
+
+Perubahan master lokasi tidak mengubah histori.
+
+---
+
+# 7. Database Changes
+
+## user_profiles
+
+* lat
+* lng
+
+---
+
+## support_reports
+
+Tambahkan:
+
+* work_type
+
+Enum:
+
+* onsite
+* remote
+
+---
+
+## reporting_users
+
+Pencatatan distance di reporting_users
+
+---
+
+# 9. Distance Provider
+
+Provider:
+
+OSRM
+
+Endpoint:
+
+https://router.project-osrm.org/route/v1/driving/{lng1},{lat1};{lng2},{lat2}?overview=false
+
+Catatan:
+
+OSRM menggunakan format:
+
+Longitude, Latitude
+
+Contoh:
+
+106.650492,-6.174702
+
+---
+
+# 10. Calculation Flow
+
+Saat Report disubmit:
+
+Untuk setiap Support:
+
+Step 1
+
+Periksa Work Type.
+
+Jika Remote:
+
+* distance = 0
+* selesai
+
+Jika On Site:
+
+Step 2
+
+Cari histori perjalanan terakhir Support pada tanggal tersebut.
+
+Step 3
+
+Jika histori tidak ada:
+
+Origin = Rumah
+
+Hitung perjalanan.
+
+Step 4
+
+Jika histori ada:
+
+Bandingkan lokasi terakhir dengan lokasi report.
+
+Jika sama:
+
+* distance = 0
+
+Jika berbeda:
+
+Hitung menggunakan OSRM.
+
+---
+
+# 11. Example Scenarios
+
+## Scenario 1
+
+08:00
+
+Lokasi A
+
+09:00
+
+Lokasi A
+
+10:00
+
+Lokasi A
+
+14:00
+
+Lokasi B
+
+Perjalanan:
+
+Rumah → A
+
+A → B
+
+---
+
+## Scenario 2
+
+08:00
+
+Support A
+
+Lokasi A
+
+09:00
+
+Support B
+
+Lokasi B
+
+14:00
+
+Support A
+
+Support B
+
+Lokasi C
+
+Perjalanan:
+
+Support A
+
+A → C
+
+Support B
+
+B → C
+
+---
+
+## Scenario 3
+
+08:00
+
+On Site A
+
+09:00
+
+Remote
+
+10:00
+
+Remote
+
+13:00
+
+On Site B
+
+Perjalanan:
+
+Rumah → A
+
+A → B
+
+---
+
+## Scenario 4
+
+Seluruh pekerjaan Remote.
+
+08:00 Remote
+
+10:00 Remote
+
+14:00 Remote
+
+Total perjalanan:
+
+0 KM
+
+---
+
+# 12. Reporting
+
+## Detail
+
+| Tanggal    | Support | Origin   | Destination | KM    |
+| ---------- | ------- | -------- | ----------- | ----- |
+| 2026-06-25 | A       | Rumah    | Lokasi A    | 12.40 |
+| 2026-06-25 | A       | Lokasi A | Lokasi B    | 8.50  |
+| 2026-06-25 | B       | Rumah    | Lokasi C    | 15.80 |
+
+---
+
+## Rekap
+
+| Support   | Locations | Total KM |
+| --------- | ----------| -------- |
+| Support A | 2         | 20.90    |
+| Support B | 1         | 15.80    |
+
+---
+
+# 13. Acceptance Criteria
+
+* Visit pertama dihitung dari rumah Support.
+* Visit berikutnya dihitung dari lokasi terakhir.
+* Report Remote tidak menghitung perjalanan.
+* Report pada lokasi yang sama di tanggal yang sama tidak membuat perjalanan baru.
+* Setiap Support dihitung secara independen.
+* Snapshot perjalanan tersimpan.
+* Histori tidak berubah walaupun master lokasi berubah.
+* Total kilometer dapat dihitung per hari, minggu, dan bulan.
+* Sistem dapat menangani lebih dari satu Support dalam satu report.
