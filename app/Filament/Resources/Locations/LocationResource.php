@@ -5,15 +5,19 @@ namespace App\Filament\Resources\Locations;
 use App\Filament\Resources\Locations\Pages\CreateLocation;
 use App\Filament\Resources\Locations\Pages\EditLocation;
 use App\Filament\Resources\Locations\Pages\ListLocations;
-use App\Filament\Resources\Locations\RelationManagers\ContractsRelationManager;
+use App\Filament\Resources\Locations\Pages\ManageLocationContracts;
+use App\Filament\Resources\Locations\Pages\ManageLocationGalleries;
 use App\Filament\Resources\Locations\Schemas\LocationForm;
 use App\Filament\Resources\Locations\Tables\LocationsTable;
 use App\Models\Location;
 use BackedEnum;
+use Filament\Pages\Enums\SubNavigationPosition;
+use Filament\Resources\Pages\Page;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class LocationResource extends Resource
 {
@@ -21,9 +25,11 @@ class LocationResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMapPin;
 
-    protected static string |\UnitEnum| null $navigationGroup = 'Main';
+    protected static string|\UnitEnum|null $navigationGroup = 'Main';
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
     public static function form(Schema $schema): Schema
     {
@@ -37,12 +43,19 @@ class LocationResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            ContractsRelationManager::class,
-        ];
+        return [];
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getRecordSubNavigation(Page $page): array
+    {
+        return $page->generateNavigationItems([
+            EditLocation::class,
+            ManageLocationContracts::class,
+            ManageLocationGalleries::class,
+        ]);
+    }
+
+    public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
 
@@ -59,6 +72,8 @@ class LocationResource extends Resource
             'index' => ListLocations::route('/'),
             'create' => CreateLocation::route('/create'),
             'edit' => EditLocation::route('/{record}/edit'),
+            'contracts' => ManageLocationContracts::route('/{record}/contracts'),
+            'gallery' => ManageLocationGalleries::route('/{record}/gallery-report'),
         ];
     }
 }

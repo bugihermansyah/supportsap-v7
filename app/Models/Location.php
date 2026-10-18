@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 /**
  * @property string $id
@@ -84,5 +85,17 @@ class Location extends Model
     public function contracts(): HasMany
     {
         return $this->hasMany(Contract::class);
+    }
+
+    public function reportings(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Reporting::class,
+            Outstanding::class,
+            'location_id',
+            'outstanding_id',
+            'id',
+            'id',
+        );
     }
 }
