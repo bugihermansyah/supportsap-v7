@@ -4,22 +4,14 @@ namespace App\Filament\Widgets\Support;
 
 use App\Enums\OutstandingTypeProblem;
 use App\Enums\ReportingState;
-use App\Models\Contract;
+use App\Filament\Resources\Outstandings\Schemas\OutstandingForm;
 use App\Models\Location;
 use App\Models\Outstanding;
 use App\Models\Reporting;
 use App\Models\User;
 use Filament\Actions\Action;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Repeater\TableColumn;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
@@ -27,7 +19,6 @@ use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class Schedules extends TableWidget
@@ -35,9 +26,6 @@ class Schedules extends TableWidget
     protected static ?string $heading = 'Pastikan report sesuai urutan kunjungan!';
 
     protected static ?int $sort = 1;
-
-    /** Cache is_ho per lokasi supaya closure form tidak query berulang kali. */
-    protected array $hoLocationCache = [];
 
     public function table(Table $table): Table
     {
@@ -218,160 +206,43 @@ class Schedules extends TableWidget
             ->toolbarActions([]);
     }
 
-    /**
-     * Support dapat membuat outstanding sendiri. PIC bersifat opsional:
-     * tanpa PIC tiket menunggu assignment Head Support, dengan PIC tiket
-     * sekaligus dibuatkan jadwal kunjungan.
-     */
+    /** Open Ticket uses the same create form and create-or-schedule modes as Outstanding. */
     protected function openTicketAction(): Action
     {
         return Action::make('createOutstanding')
             ->label('Open Ticket')
             ->icon('heroicon-o-plus-circle')
             ->color('primary')
-            ->modalWidth(Width::ThreeExtraLarge)
-            ->modalSubmitActionLabel('Simpan')
-            ->schema([
-                Select::make('location_id')
-                    ->label('Location')
-                    ->searchable()
-                    ->preload()
-                    ->options(function () {
-                        $user = auth()->user();
-
-                        if ($user->canViewAllSupportTeams()) {
-                            return Location::with('company')->get()->pluck('full_name', 'id');
-                        }
-
-                        return Location::where('team_id', $user->getTeamId())
-                            ->orWhere('is_ho', true)
-                            ->with('company')
-                            ->get()
-                            ->pluck('full_name', 'id');
-                    })
-                    ->required()
-                    ->live()
-                    ->afterStateUpdated(function (Set $set, $state) {
-                        if (! $state) {
-                            $set('product_id', null);
-
-                            return;
-                        }
-
-                        $defaultProduct = Contract::query()
-                            ->where('location_id', $state)
-                            ->where('is_default', 1)
-                            ->join('products', 'products.id', '=', 'contracts.product_id')
-                            ->select('products.id')
-                            ->first();
-
-                        $set('product_id', $defaultProduct?->id);
-                    })
-                    ->columnSpanFull(),
-
-                Select::make('product_id')
-                    ->label('Produk')
-                    ->options(fn (Get $get): Collection => Contract::query()
-                        ->where('location_id', $get('location_id'))
-                        ->join('products', 'products.id', '=', 'contracts.product_id')
-                        ->pluck('products.name', 'products.id'))
-                    ->required(fn (Get $get) => ! $this->isHoLocation($get('location_id')))
-                    ->hidden(fn (Get $get) => $this->isHoLocation($get('location_id'))),
-
-                Select::make('reporter')
-                    ->label('Reporter')
-                    ->options([
-                        'client' => 'Client',
-                        'support' => 'Internal',
-                    ])
-                    ->default('client')
-                    ->required(fn (Get $get) => ! $this->isHoLocation($get('location_id')))
-                    ->hidden(fn (Get $get) => $this->isHoLocation($get('location_id'))),
-
-                TextInput::make('reporter_name')
-                    ->label('Reporter Name')
-                    ->maxLength(100)
-                    ->required(fn (Get $get) => ! $this->isHoLocation($get('location_id')))
-                    ->hidden(fn (Get $get) => $this->isHoLocation($get('location_id'))),
-
-                Repeater::make('problems')
-                    ->label('Problem')
-                    ->reorderable(false)
-                    ->defaultItems(1)
-                    ->minItems(1)
-                    ->compact()
-                    ->table([
-                        TableColumn::make('Title'),
-                    ])
-                    ->schema([
-                        TextInput::make('title')
-                            ->hiddenLabel()
-                            ->maxLength(100)
-                            ->required(),
-                        Hidden::make('level')
-                            ->default(3),
-                    ])
-                    ->columnSpanFull(),
-
-                Select::make('user_id')
-                    ->label('PIC Support (Opsional)')
-                    ->multiple()
-                    ->searchable()
-                    ->live()
-                    ->helperText('Kosongkan jika tiket cukup masuk antrian. Pilih PIC untuk langsung membuat jadwal.')
-                    ->options(function (): array {
-                        return User::role(['support', 'head_support', 'support_ho'])
-                            ->where('status', '!=', 0)
-                            ->with('team')
-                            ->orderBy('name')
-                            ->get()
-                            ->groupBy(fn (User $user) => $user->team?->name ?? 'Tanpa Team')
-                            ->map(fn (Collection $users) => $users->pluck('name', 'id')->all())
-                            ->all();
-                    })
-                    ->columnSpanFull(),
-
-                DatePicker::make('date_visit')
-                    ->label('Tanggal Jadwal')
-                    ->default(today())
-                    ->native(true)
-                    ->visible(fn (Get $get): bool => filled($get('user_id')))
-                    ->required(fn (Get $get): bool => filled($get('user_id')))
-                    ->helperText('Wajib diisi jika PIC Support dipilih.')
-                    ->columnSpanFull(),
-            ])
+            ->modalWidth(Width::ScreenExtraLarge)
+            ->modalSubmitActionLabel('Create')
+            ->schema(OutstandingForm::createSchema())
             ->action(fn (array $data) => $this->createTicket($data));
     }
 
-    /** Buat satu outstanding untuk setiap problem, lalu jadwal bila PIC dipilih. */
+    /** Apply the same new-outstanding and existing-outstanding scheduling flow as CreateOutstanding. */
     protected function createTicket(array $data): void
     {
         $location = Location::find($data['location_id'] ?? null);
-        $problems = collect((array) ($data['problems'] ?? []))
-            ->map(function ($problem): array {
-                if (! is_array($problem)) {
-                    return [
-                        'title' => trim((string) $problem),
-                        'level' => 3,
-                    ];
-                }
 
-                return [
-                    'title' => trim((string) ($problem['title'] ?? '')),
-                    'level' => max(1, min(5, (int) ($problem['level'] ?? 3))),
-                ];
-            })
-            ->filter(fn (array $problem): bool => filled($problem['title']))
-            ->values()
-            ->all();
-        $requestedPicIds = collect((array) ($data['user_id'] ?? []))
+        if (! $location) {
+            Notification::make()
+                ->title('Lokasi tidak valid')
+                ->body('Pilih lokasi yang masih tersedia.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $isNewOutstanding = (bool) ($data['task'] ?? false);
+        $requestedUserIds = collect((array) ($data['user_id'] ?? []))
             ->filter()
             ->unique()
             ->values()
             ->all();
-        $picIds = User::role(['support', 'head_support', 'support_ho'])
+        $userIds = User::query()
             ->where('status', '!=', 0)
-            ->whereIn('id', $requestedPicIds)
+            ->whereIn('id', $requestedUserIds)
             ->pluck('id')
             ->all();
         $dateVisit = $data['date_visit'] ?? null;
@@ -385,119 +256,177 @@ class Schedules extends TableWidget
             return;
         }
 
-        if (! $problems) {
+        if (! $requestedUserIds || count($userIds) !== count($requestedUserIds)) {
             Notification::make()
-                ->title('Problem wajib diisi')
-                ->body('Tambahkan minimal satu problem sebelum menyimpan.')
+                ->title('Support tidak valid')
+                ->body('Pilih minimal satu user Support aktif dari daftar.')
                 ->danger()
                 ->send();
 
             return;
         }
 
-        if (count($picIds) !== count($requestedPicIds)) {
-            Notification::make()
-                ->title('PIC Support tidak valid')
-                ->body('Pilih PIC Support aktif yang tersedia pada daftar.')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        if ($picIds && blank($dateVisit)) {
+        if (blank($dateVisit)) {
             Notification::make()
                 ->title('Tanggal jadwal wajib diisi')
-                ->body('Isi tanggal jadwal jika PIC Support dipilih.')
+                ->body('Isi Visit Date sebelum membuat jadwal.')
                 ->danger()
                 ->send();
 
             return;
+        }
+
+        $outstandingIds = collect((array) ($data['outstanding_id'] ?? []))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $problems = collect((array) ($data['problems'] ?? []))
+            ->map(fn ($problem): array => [
+                'title' => trim((string) (is_array($problem) ? ($problem['title'] ?? '') : $problem)),
+                'level' => max(1, min(5, (int) (is_array($problem) ? ($problem['level'] ?? 3) : 3))),
+            ])
+            ->filter(fn (array $problem): bool => filled($problem['title']))
+            ->values()
+            ->all();
+
+        if ($isNewOutstanding && ! $problems) {
+            $problems = [['title' => 'Internal Activity', 'level' => 3]];
+        }
+
+        $existingOutstandings = collect();
+
+        if (! $isNewOutstanding) {
+            if (! $outstandingIds) {
+                Notification::make()
+                    ->title('Problem wajib dipilih')
+                    ->body('Pilih minimal satu Outstanding untuk dijadwalkan.')
+                    ->danger()
+                    ->send();
+
+                return;
+            }
+
+            $existingOutstandings = Outstanding::query()
+                ->where('location_id', $location->id)
+                ->where('status', 0)
+                ->whereNotExists(function ($query): void {
+                    $query->select(DB::raw(1))
+                        ->from('reportings')
+                        ->whereColumn('reportings.outstanding_id', 'outstandings.id')
+                        ->whereNull('reportings.status');
+                })
+                ->whereIn('id', $outstandingIds)
+                ->get();
+
+            if ($existingOutstandings->count() !== count($outstandingIds)) {
+                Notification::make()
+                    ->title('Problem tidak valid')
+                    ->body('Pilih Outstanding open yang belum memiliki jadwal aktif untuk lokasi tersebut.')
+                    ->danger()
+                    ->send();
+
+                return;
+            }
         }
 
         $isHo = (bool) $location->is_ho;
-        $today = now()->toDateString();
         $reporter = $isHo ? 'support' : ($data['reporter'] ?? 'client');
         $reporterName = $isHo ? auth()->user()->name : ($data['reporter_name'] ?? '');
-        $outstandings = [];
-        $reportings = [];
+        $dateIn = $data['date_in'] ?? null;
+        $lpmReporter = $data['reporter'] ?? 'client';
+        $reportings = DB::transaction(function () use ($data, $location, $isHo, $reporter, $reporterName, $dateIn, $dateVisit, $userIds, $isNewOutstanding, $problems, $existingOutstandings, $lpmReporter): array {
+            $targets = $existingOutstandings;
 
-        DB::transaction(function () use ($data, $location, $isHo, $today, $reporter, $reporterName, $problems, $picIds, $dateVisit, &$outstandings, &$reportings): void {
-            foreach ($problems as $problem) {
-                $lpm = 0;
+            if ($isNewOutstanding) {
+                $targets = collect();
 
-                if (! $isHo && $reporter === 'client') {
-                    $lpm = Outstanding::where('location_id', $location->id)
-                        ->whereDate('date_in', $today)
-                        ->where('lpm', 1)
-                        ->exists() ? 0 : 1;
+                foreach ($problems as $problem) {
+                    $lpm = 0;
+
+                    if ($lpmReporter === 'client') {
+                        $dateInForLpm = $dateIn ?: today()->toDateString();
+                        $lpm = Outstanding::query()
+                            ->where('location_id', $location->id)
+                            ->whereDate('date_in', $dateInForLpm)
+                            ->where('lpm', 1)
+                            ->exists() ? 0 : 1;
+                    }
+
+                    $outstanding = Outstanding::create([
+                        'number' => 'SP-'.now()->format('ym').random_int(100000, 999999),
+                        'user_id' => auth()->id(),
+                        'location_id' => $location->id,
+                        'team_id' => $location->team_id,
+                        'product_id' => $isHo ? null : ($data['product_id'] ?? null),
+                        'reporter' => $reporter,
+                        'reporter_name' => $reporterName,
+                        'title' => $problem['title'],
+                        'level' => $problem['level'],
+                        'is_implement' => $data['is_implement'] ?? false,
+                        'is_oncall' => $data['is_oncall'] ?? false,
+                        'is_type_problem' => OutstandingTypeProblem::NON->value,
+                        'date_in' => $dateIn,
+                        'date_visit' => $dateVisit,
+                        'status' => '0',
+                        'lpm' => $lpm,
+                    ]);
+
+                    $targets->push($outstanding);
                 }
+            }
 
-                $outstanding = Outstanding::create([
-                    'number' => 'SP-'.now()->format('ym').random_int(100000, 999999),
-                    'user_id' => auth()->id(),
-                    'location_id' => $location->id,
-                    'team_id' => $location->team_id,
-                    'product_id' => $data['product_id'] ?? null,
-                    'reporter' => $reporter,
-                    'reporter_name' => $reporterName,
-                    'title' => $problem['title'],
-                    'level' => $problem['level'],
-                    'is_type_problem' => OutstandingTypeProblem::NON->value,
-                    'date_in' => $today,
-                    'date_visit' => $picIds ? $dateVisit : null,
-                    'status' => '0',
-                    'lpm' => $lpm,
-                ]);
-                $outstandings[] = $outstanding;
+            $result = [];
 
-                if (! $picIds) {
-                    continue;
-                }
-
+            foreach ($targets as $outstanding) {
+                $targetLocation = $outstanding->location ?? $location;
                 $reporting = Reporting::create([
                     'outstanding_id' => $outstanding->id,
                     'date_visit' => $dateVisit,
                     'status' => null,
-                    'email_to' => $location->customers()->wherePivot('is_to', true)->pluck('email')->toArray(),
-                    'email_cc' => $location->customers()->wherePivot('is_to', false)->pluck('email')->toArray(),
+                    'email_to' => $targetLocation->customers()->wherePivot('is_to', true)->pluck('email')->toArray(),
+                    'email_cc' => $targetLocation->customers()->wherePivot('is_to', false)->pluck('email')->toArray(),
                 ]);
-
-                $reporting->users()->attach($picIds);
-                $reportings[] = $reporting;
+                $reporting->users()->attach($userIds);
+                $result[] = $reporting;
             }
+
+            return $result;
         });
 
         if (! $reportings) {
             Notification::make()
-                ->title('Ticket berhasil dibuat!')
-                ->body(count($outstandings).' outstanding menunggu Head Support untuk assign jadwal.')
-                ->success()
+                ->title('Tidak ada jadwal yang dibuat')
+                ->danger()
                 ->send();
 
             return;
         }
 
-        $assignedUsers = User::whereIn('id', $picIds)->get();
+        $assignedUsers = User::query()->whereIn('id', $userIds)->get();
         $supportEmails = $assignedUsers->pluck('email')->filter()->values()->all();
 
-        foreach ($outstandings as $outstanding) {
+        foreach ($reportings as $reporting) {
+            $outstanding = $reporting->outstanding;
+            $targetLocation = $outstanding?->location ?? $location;
+
             if ($supportEmails && class_exists(\App\Jobs\ScheduleMailJob::class)) {
                 \App\Jobs\ScheduleMailJob::dispatch(
                     $supportEmails,
                     $dateVisit,
-                    $location->company->alias ?? 'SAP',
-                    $location->name,
-                    $outstanding->title,
-                    $outstanding->reporter ?? '-',
-                    $outstanding->reporter_name ?? '-'
+                    $targetLocation->company->alias ?? 'SAP',
+                    $targetLocation->name,
+                    $outstanding?->title ?? '-',
+                    $outstanding?->reporter ?? '-',
+                    $outstanding?->reporter_name ?? '-'
                 )->onQueue('scheduleEmails');
             }
 
             foreach ($assignedUsers as $assignedUser) {
                 Notification::make()
                     ->title('Jadwal baru')
-                    ->body("Jadwal baru di {$location->name} untuk problem: {$outstanding->title} pada {$dateVisit}")
+                    ->body("Jadwal baru di {$targetLocation->name} untuk problem: {$outstanding?->title} pada {$dateVisit}")
                     ->info()
                     ->actions([
                         Action::make('view')
@@ -511,19 +440,10 @@ class Schedules extends TableWidget
         }
 
         Notification::make()
-            ->title('Ticket berhasil dibuat dan jadwal dibuat!')
-            ->body(count($outstandings).' outstanding dijadwalkan untuk '.$dateVisit.'.')
+            ->title($isNewOutstanding ? 'Ticket berhasil dibuat dan jadwal dibuat!' : 'Jadwal berhasil dibuat!')
+            ->body(count($reportings).' problem dijadwalkan untuk '.$dateVisit.'.')
             ->success()
             ->send();
-    }
-
-    protected function isHoLocation(mixed $locationId): bool
-    {
-        if (blank($locationId)) {
-            return false;
-        }
-
-        return $this->hoLocationCache[$locationId] ??= (bool) Location::whereKey($locationId)->value('is_ho');
     }
 
     public static function canView(): bool

@@ -40,7 +40,7 @@ class OutstandingForm
             return $schema->components(static::getEditSchema())->columns(5);
         }
 
-        return $schema->components(static::getCreateSchema());
+        return $schema->components(static::createSchema());
     }
 
     protected static function getCreateSchema(): array
@@ -52,7 +52,6 @@ class OutstandingForm
                         ->schema([
                             Toggle::make('task')
                                 ->label('New Outstanding')
-                                ->dehydrated(false)
                                 ->extraAttributes([
                                     'x-on:keydown.window.ctrl.1.prevent' => '$el.click()',
                                 ])
@@ -265,6 +264,11 @@ class OutstandingForm
                         ])
                 ])
             ];
+    }
+
+    public static function createSchema(): array
+    {
+        return static::getCreateSchema();
     }
 
     protected static function getEditSchema(): array
