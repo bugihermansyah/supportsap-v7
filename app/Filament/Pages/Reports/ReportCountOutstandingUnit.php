@@ -2,13 +2,19 @@
 
 namespace App\Filament\Pages\Reports;
 
-use BezhanSalleh\FilamentShield\Traits\HasPageShield;
+use App\Enums\OutstandingTypeProblem;
+use App\Models\OutstandingUnit;
+use App\Models\Team;
 use App\Models\Unit;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ReportCountOutstandingUnit extends Page implements HasTable
 {
@@ -31,62 +37,101 @@ class ReportCountOutstandingUnit extends Page implements HasTable
     {
         return $table
             ->query(Unit::query())
-            ->modifyQueryUsing(function (\Illuminate\Database\Eloquent\Builder $query, \Filament\Tables\Contracts\HasTable $livewire) {
+            ->modifyQueryUsing(function (Builder $query, HasTable $livewire) {
                 // Retrieve filter state from individual select filters
                 $year = $livewire->tableFilters['year']['value'] ?? now()->year;
                 $month = $livewire->tableFilters['month']['value'] ?? now()->month;
                 $reporter = $livewire->tableFilters['reporter']['value'] ?? null;
                 $team = $livewire->tableFilters['team']['value'] ?? null;
-                
+
                 $user = auth()->user();
-                
-                $query->withCount(['outstandings' => function ($q) use ($year, $month, $reporter, $team, $user) {
-                    if ($year) {
-                        $q->whereYear('date_in', $year);
-                    }
-                    if ($month) {
-                        $q->whereMonth('date_in', $month);
-                    }
-                    if ($reporter) {
-                        $q->where('reporter', $reporter);
-                    }
-                    
-                    if ($user->hasRole('helpdesk')) {
-                        if ($team) {
-                            $q->whereHas('location', function ($lq) use ($team) {
-                                $lq->where('team_id', $team);
-                            });
-                        }
-                    } elseif ($user->hasRole('head_support')) {
-                        $q->whereHas('location', function ($lq) use ($user) {
-                            $lq->where('team_id', $user->team_id);
-                        });
-                    }
-                }]);
+
+                $unitTotals = OutstandingUnit::query()
+                    ->join('outstandings', 'outstandings.id', '=', 'outstanding_units.outstanding_id')
+                    ->join('locations', 'locations.id', '=', 'outstandings.location_id')
+                    ->select('outstanding_units.unit_id')
+                    ->selectRaw(
+                        'SUM(CASE WHEN outstandings.is_type_problem = ? THEN COALESCE(outstanding_units.qty, 0) ELSE 0 END) as hw_qty,
+                        SUM(CASE WHEN outstandings.is_type_problem = ? THEN COALESCE(outstanding_units.qty, 0) ELSE 0 END) as sw_qty,
+                        SUM(CASE WHEN outstandings.is_type_problem = ? THEN COALESCE(outstanding_units.qty, 0) ELSE 0 END) as civil_qty,
+                        SUM(CASE WHEN outstandings.is_type_problem = ? THEN COALESCE(outstanding_units.qty, 0) ELSE 0 END) as hw_non_qty,
+                        SUM(COALESCE(outstanding_units.qty, 0)) as total_qty',
+                        [
+                            OutstandingTypeProblem::HW->value,
+                            OutstandingTypeProblem::SW->value,
+                            OutstandingTypeProblem::CIVIL->value,
+                            OutstandingTypeProblem::NON->value,
+                        ],
+                    )
+                    ->whereNull('outstanding_units.deleted_at');
+
+                if ($year) {
+                    $unitTotals->whereYear('outstandings.date_in', $year);
+                }
+
+                if ($month) {
+                    $unitTotals->whereMonth('outstandings.date_in', $month);
+                }
+
+                if ($reporter) {
+                    $unitTotals->where('outstandings.reporter', $reporter);
+                }
+
+                if ($user->hasRole('helpdesk') && $team) {
+                    $unitTotals->where('locations.team_id', $team);
+                } elseif ($user->hasRole('head_support')) {
+                    $unitTotals->where('locations.team_id', $user->team_id);
+                }
+
+                $query
+                    ->leftJoinSub($unitTotals->groupBy('outstanding_units.unit_id'), 'unit_problem_totals', function ($join): void {
+                        $join->on('units.id', '=', 'unit_problem_totals.unit_id');
+                    })
+                    ->select('units.id', 'units.name')
+                    ->selectRaw(
+                        'COALESCE(unit_problem_totals.hw_qty, 0) as hw_qty,
+                        COALESCE(unit_problem_totals.sw_qty, 0) as sw_qty,
+                        COALESCE(unit_problem_totals.civil_qty, 0) as civil_qty,
+                        COALESCE(unit_problem_totals.hw_non_qty, 0) as hw_non_qty,
+                        COALESCE(unit_problem_totals.total_qty, 0) as total_qty',
+                    );
             })
             ->columns([
                 TextColumn::make('name')
-                    ->label('Unit Name')
+                    ->label('Unit')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('outstandings_count')
-                    ->label('Total Outstanding')
+                TextColumn::make('hw_qty')->label('H/W')->sortable(),
+                TextColumn::make('sw_qty')->label('S/W')->sortable(),
+                TextColumn::make('civil_qty')->label('Sipil')->sortable(),
+                TextColumn::make('hw_non_qty')->label('H/W-Non')->sortable(),
+                TextColumn::make('total_qty')
+                    ->label('Total')
                     ->sortable()
                     ->badge(),
             ])
             ->filters([
-                \Filament\Tables\Filters\SelectFilter::make('year')
+                SelectFilter::make('year')
                     ->label('Tahun')
                     ->options(function () {
-                        $years = \App\Models\Outstanding::selectRaw('YEAR(date_in) as year')->whereNotNull('date_in')->distinct()->pluck('year')->toArray();
+                        $years = OutstandingUnit::query()
+                            ->join('outstandings', 'outstandings.id', '=', 'outstanding_units.outstanding_id')
+                            ->selectRaw('YEAR(outstandings.date_in) as year')
+                            ->whereNotNull('outstandings.date_in')
+                            ->distinct()
+                            ->pluck('year')
+                            ->toArray();
                         $currentYear = now()->year;
-                        if (!in_array($currentYear, $years)) $years[] = $currentYear;
+                        if (! in_array($currentYear, $years)) {
+                            $years[] = $currentYear;
+                        }
                         rsort($years);
+
                         return array_combine($years, $years);
                     })
                     ->default(now()->year)
-                    ->query(fn (\Illuminate\Database\Eloquent\Builder $query) => $query),
-                \Filament\Tables\Filters\SelectFilter::make('month')
+                    ->query(fn (Builder $query) => $query),
+                SelectFilter::make('month')
                     ->label('Bulan')
                     ->options([
                         '1' => 'Januari', '2' => 'Februari', '3' => 'Maret', '4' => 'April',
@@ -94,22 +139,24 @@ class ReportCountOutstandingUnit extends Page implements HasTable
                         '9' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
                     ])
                     ->default(now()->month)
-                    ->query(fn (\Illuminate\Database\Eloquent\Builder $query) => $query),
-                \Filament\Tables\Filters\SelectFilter::make('reporter')
+                    ->query(fn (Builder $query) => $query),
+                SelectFilter::make('reporter')
                     ->label('Reporter')
                     ->options([
                         'client' => 'Client',
                         'preventif' => 'Preventif',
                         'support' => 'Internal/Support',
                     ])
-                    ->query(fn (\Illuminate\Database\Eloquent\Builder $query) => $query),
-                \Filament\Tables\Filters\SelectFilter::make('team')
+                    ->query(fn (Builder $query) => $query),
+                SelectFilter::make('team')
                     ->label('Team')
-                    ->options(fn () => \App\Models\Team::pluck('name', 'id'))
+                    ->options(fn () => Team::pluck('name', 'id'))
                     ->visible(fn () => auth()->user()?->hasRole('helpdesk'))
-                    ->query(fn (\Illuminate\Database\Eloquent\Builder $query) => $query),
-            ], layout: \Filament\Tables\Enums\FiltersLayout::AboveContent)
-            ->defaultSort('outstandings_count', 'desc');
+                    ->query(fn (Builder $query) => $query),
+            ], layout: FiltersLayout::AboveContent)
+            ->defaultSort(fn (Builder $query): Builder => $query
+                ->orderByDesc('total_qty')
+                ->orderBy('units.name'))
+            ->defaultKeySort(false);
     }
-
 }
