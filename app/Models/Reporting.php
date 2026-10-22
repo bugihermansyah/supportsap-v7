@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\OutstandingStatus;
 use App\Enums\PendingReason;
 use App\Enums\ReportingState;
 use App\Enums\ReportStatus;
@@ -129,6 +130,41 @@ class Reporting extends Model implements HasMedia
             'cancelled_by' => $userId ?? auth()->id(),
             'score' => null,
         ])->save();
+    }
+
+    /** Keep the parent outstanding status and finish dates in sync with this report. */
+    public function syncOutstandingStatus(): void
+    {
+        $outstanding = $this->outstanding;
+
+        if (! $outstanding) {
+            return;
+        }
+
+        $updateData = match ($this->status) {
+            ReportStatus::Pending => [
+                'date_finish' => null,
+                'status' => OutstandingStatus::Open,
+            ],
+            ReportStatus::Finish => [
+                'date_finish' => $this->date_visit,
+                'status' => OutstandingStatus::Close,
+            ],
+            ReportStatus::PendingClient, ReportStatus::Monitoring => [
+                'date_finish' => $this->date_visit,
+                'status' => OutstandingStatus::Open,
+            ],
+            ReportStatus::Temporary => [
+                'date_finish' => $this->date_visit,
+                'date_temporary' => $this->date_visit,
+                'status' => OutstandingStatus::Open,
+            ],
+            default => [],
+        };
+
+        if ($updateData !== []) {
+            $outstanding->update($updateData);
+        }
     }
 
     protected static function booted()

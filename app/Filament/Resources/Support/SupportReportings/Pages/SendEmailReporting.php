@@ -3,12 +3,15 @@
 namespace App\Filament\Resources\Support\SupportReportings\Pages;
 
 use Alsaloul\ImageGallery\Infolists\Entries\ImageGalleryEntry;
+use App\Enums\PendingReason;
 use App\Enums\ReportStatus;
 use App\Filament\Resources\Support\SupportReportings\SupportReportingResource;
+use App\Jobs\CalculateSupportTravelDistance;
 use App\Mail\SupportReportingMail;
 use App\Models\Customer;
 use App\Models\Reporting;
 use App\Models\ReportingEmail;
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -16,6 +19,7 @@ use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Infolists\Components\TextEntry;
@@ -30,6 +34,8 @@ use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -45,6 +51,8 @@ class SendEmailReporting extends Page implements HasForms, HasTable
     protected string $view = 'filament.pages.support-reportings.send-email';
 
     public ?array $data = [];
+
+    public ?array $ticketDetailsData = [];
 
     public function mount(int|string $record): void
     {
@@ -72,7 +80,17 @@ class SendEmailReporting extends Page implements HasForms, HasTable
             'email_cc' => $emailCc,
             'start_work' => $this->record->start_work,
             'end_work' => $this->record->end_work,
+        ]);
+
+        $this->ticketDetailsForm->fill([
+            'title' => $this->record->outstanding?->title,
+            'reporter' => $this->record->outstanding?->reporter,
+            'reporter_name' => $this->record->outstanding?->reporter_name,
+            'date_visit' => $this->record->date_visit,
+            'work' => $this->record->work,
+            'support_user_ids' => $this->record->users->modelKeys(),
             'status' => $this->record->status?->value,
+            'pending_reason' => $this->record->pending_reason?->value,
             'revisit' => $this->record->revisit,
         ]);
     }
@@ -93,48 +111,6 @@ class SendEmailReporting extends Page implements HasForms, HasTable
             ->model($this->record)
             ->statePath('data')
             ->components([
-                Section::make('Detail Tiket')
-                    ->schema([
-                        TextEntry::make('outstanding.number')
-                            ->label('No. Tiket'),
-                        TextEntry::make('outstanding.location.name')
-                            ->label('Lokasi'),
-                        TextEntry::make('outstanding.title')
-                            ->label('Masalah'),
-                        TextEntry::make('outstanding.reporter')
-                            ->label('Reporter'),
-                        TextEntry::make('date_visit')
-                            ->label('Tanggal Aksi')
-                            ->date('d M Y'),
-                        TextEntry::make('work')
-                            ->label('Tipe Aksi')
-                            ->formatStateUsing(fn (string $state): string => ucfirst($state)),
-                        TextEntry::make('users.firstname')
-                            ->label('Support'),
-                        Select::make('status')
-                            ->label('Status')
-                            ->options(ReportStatus::class)
-                            ->native(false)
-                            ->selectablePlaceholder(false)
-                            ->live()
-                            ->disabled(fn (): bool => $this->isStatusLocked())
-                            ->helperText(fn (): ?string => $this->reporting()->outstanding?->location?->is_ho
-                                ? 'Lokasi HO — status terkunci Finish.'
-                                : null)
-                            ->afterStateUpdated(fn ($state) => $this->saveStatus($state)),
-                        DatePicker::make('revisit')
-                            ->label('Revisit')
-                            ->placeholder('Date next target')
-                            ->native(true)
-                            ->live(onBlur: true)
-                            ->disabled(fn (): bool => $this->isStatusLocked())
-                            ->visible(fn (Get $get): bool => $this->normalizeStatus($get('status')) !== ReportStatus::Finish)
-                            ->afterStateUpdated(fn ($state) => $this->saveRevisit($state)),
-                        TextEntry::make('send_mail_at')
-                            ->label('Send Mail At')
-                            ->date('d M Y'),
-                    ])
-                    ->columnSpan(1),
                 Group::make()
                     ->schema([
                         Section::make('Email Recipients')
@@ -224,7 +200,115 @@ class SendEmailReporting extends Page implements HasForms, HasTable
                     ])
                     ->columnSpan(1),
             ])
-            ->columns(4);
+            ->columns(3);
+    }
+
+    protected function getForms(): array
+    {
+        return ['form', 'ticketDetailsForm'];
+    }
+
+    public function ticketDetailsForm(Schema $schema): Schema
+    {
+        return $schema
+            ->model($this->record)
+            ->statePath('ticketDetailsData')
+            ->components([
+                Section::make('Detail Tiket')
+                    ->schema([
+                        TextEntry::make('outstanding.number')
+                            ->label('No. Tiket'),
+                        TextEntry::make('outstanding.location.name')
+                            ->label('Lokasi'),
+                        TextInput::make('title')
+                            ->label('Masalah')
+                            ->required()
+                            ->maxLength(255)
+                            ->disabled(fn (): bool => ! $this->canEditTicketDetails()),
+                        Select::make('reporter')
+                            ->label('Reporter')
+                            ->options([
+                                'client' => 'Client',
+                                'preventif' => 'Preventif',
+                                'support' => 'Internal',
+                            ])
+                            ->native(false)
+                            ->in(['client', 'preventif', 'support'])
+                            ->required(fn (): bool => ! $this->reporting()->outstanding?->location?->is_ho)
+                            ->disabled(fn (): bool => ! $this->canEditTicketDetails()),
+                        TextInput::make('reporter_name')
+                            ->label('Reporter Name')
+                            ->required(fn (): bool => ! $this->reporting()->outstanding?->location?->is_ho)
+                            ->maxLength(255)
+                            ->disabled(fn (): bool => ! $this->canEditTicketDetails()),
+                        DatePicker::make('date_visit')
+                            ->label('Tanggal Aksi')
+                            ->native(false)
+                            ->date()
+                            ->required()
+                            ->disabled(fn (): bool => ! $this->canEditTicketDetails()),
+                        ToggleButtons::make('work')
+                            ->label('Tipe Aksi')
+                            ->options([
+                                'visit' => 'Visit',
+                                'remote' => 'Remote',
+                            ])
+                            ->in(['visit', 'remote'])
+                            ->inline()
+                            ->grouped()
+                            ->required()
+                            ->disabled(fn (): bool => ! $this->canEditTicketDetails()),
+                        Select::make('support_user_ids')
+                            ->label('Support')
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->exists('users', 'id')
+                            ->options(fn (): array => User::query()
+                                ->where(function ($query): void {
+                                    $query
+                                        ->where('status', '!=', 0)
+                                        ->orWhereIn('id', $this->reporting()->users()->pluck('users.id'));
+                                })
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->all())
+                            ->disabled(fn (): bool => ! $this->canEditTicketDetails()),
+                        Select::make('status')
+                            ->label('Status')
+                            ->options(ReportStatus::class)
+                            ->native(false)
+                            ->selectablePlaceholder(false)
+                            ->live()
+                            ->enum(ReportStatus::class)
+                            ->required()
+                            ->disabled(fn (): bool => $this->isStatusLocked())
+                            ->helperText(fn (): ?string => $this->reporting()->outstanding?->location?->is_ho
+                                ? 'Lokasi HO — status terkunci Finish.'
+                                : null),
+                        Select::make('pending_reason')
+                            ->label('Alasan Pending')
+                            ->options(PendingReason::class)
+                            ->native(false)
+                            ->enum(PendingReason::class)
+                            ->visible(fn (Get $get): bool => PendingReason::isRequiredFor($get('status')))
+                            ->required(fn (Get $get): bool => PendingReason::isRequiredFor($get('status')))
+                            ->disabled(fn (): bool => ! $this->canEditTicketDetails()),
+                        DatePicker::make('revisit')
+                            ->label('Revisit')
+                            ->placeholder('Date next target')
+                            ->native(true)
+                            ->visible(fn (Get $get): bool => ! $this->reporting()->outstanding?->location?->is_ho
+                                && $this->normalizeStatus($get('status')) !== ReportStatus::Finish)
+                            ->required(fn (Get $get): bool => ! $this->reporting()->outstanding?->location?->is_ho
+                                && $this->normalizeStatus($get('status')) !== ReportStatus::Finish)
+                            ->disabled(fn (): bool => ! $this->canEditTicketDetails()),
+                        TextEntry::make('send_mail_at')
+                            ->label('Send Mail At')
+                            ->date('d M Y'),
+                    ])
+                    ->columns(1),
+            ]);
     }
 
     protected function reporting(): Reporting
@@ -264,47 +348,78 @@ class SendEmailReporting extends Page implements HasForms, HasTable
     protected function isStatusLocked(): bool
     {
         return (bool) $this->reporting()->outstanding?->location?->is_ho
-            || ! auth()->user()?->can('update', $this->reporting());
+            || ! $this->canEditTicketDetails();
     }
 
-    public function saveStatus(mixed $state): void
+    public function canEditTicketDetails(): bool
     {
-        if ($this->isStatusLocked()) {
+        return (bool) auth()->user()?->can('update', $this->reporting());
+    }
+
+    public function saveTicketDetails(): void
+    {
+        $reporting = $this->reporting();
+        Gate::authorize('update', $reporting);
+
+        $data = $this->ticketDetailsForm->getState();
+        $outstanding = $reporting->outstanding;
+
+        if (! $outstanding) {
+            Notification::make()
+                ->title('Detail tiket tidak dapat disimpan.')
+                ->body('Outstanding terkait tidak ditemukan.')
+                ->danger()
+                ->send();
+
             return;
         }
 
-        $status = $this->normalizeStatus($state);
+        $status = $outstanding->location?->is_ho
+            ? ReportStatus::Finish
+            : $this->normalizeStatus($data['status'] ?? null);
 
         if (! $status) {
             return;
         }
 
-        $payload = ['status' => $status];
+        $revisit = $status === ReportStatus::Finish ? null : ($data['revisit'] ?? null);
 
-        // Finish tidak punya next target; status lain wajib revisit (lihat SupportReportingForm).
-        if ($status === ReportStatus::Finish) {
-            $payload['revisit'] = null;
-            $this->data['revisit'] = null;
-        }
+        DB::transaction(function () use ($data, $outstanding, $reporting, $status, $revisit): void {
+            $reporting->update([
+                'date_visit' => $data['date_visit'],
+                'work' => $data['work'],
+                'status' => $status,
+                'pending_reason' => $data['pending_reason'] ?? null,
+                'revisit' => $revisit,
+            ]);
 
-        $this->reporting()->update($payload);
+            $outstanding->update([
+                'title' => $data['title'],
+                'reporter' => $data['reporter'] ?? null,
+                'reporter_name' => $data['reporter_name'] ?? null,
+            ]);
+
+            $reporting->users()->sync($data['support_user_ids'] ?? []);
+            $reporting->syncOutstandingStatus();
+        });
+
+        CalculateSupportTravelDistance::dispatch($reporting->id);
+
+        $this->record->refresh()->load(['outstanding.location.team', 'outstanding.location.company', 'users']);
+        $this->ticketDetailsForm->fill([
+            'title' => $this->record->outstanding?->title,
+            'reporter' => $this->record->outstanding?->reporter,
+            'reporter_name' => $this->record->outstanding?->reporter_name,
+            'date_visit' => $this->record->date_visit,
+            'work' => $this->record->work,
+            'support_user_ids' => $this->record->users->modelKeys(),
+            'status' => $this->record->status?->value,
+            'pending_reason' => $this->record->pending_reason?->value,
+            'revisit' => $this->record->revisit,
+        ]);
 
         Notification::make()
-            ->title('Status disimpan: '.$status->getLabel())
-            ->success()
-            ->send();
-    }
-
-    public function saveRevisit(mixed $state): void
-    {
-        if ($this->isStatusLocked()) {
-            return;
-        }
-
-        $this->reporting()->update(['revisit' => filled($state) ? $state : null]);
-
-        Notification::make()
-            ->title(filled($state) ? 'Revisit disimpan.' : 'Revisit dikosongkan.')
+            ->title('Perubahan detail tiket berhasil disimpan.')
             ->success()
             ->send();
     }
