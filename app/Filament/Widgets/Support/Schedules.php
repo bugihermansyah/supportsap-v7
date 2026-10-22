@@ -10,7 +10,6 @@ use App\Models\Outstanding;
 use App\Models\Reporting;
 use App\Models\User;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\Layout\Stack;
@@ -162,35 +161,6 @@ class Schedules extends TableWidget
                         $record->update([
                             'start_work' => null,
                         ]);
-                    }),
-                // Jadwal yang tidak jadi dikunjungi: ditutup dengan alasan, bukan
-                // dibiarkan menggantung di daftar atau dihapus.
-                Action::make('cancelSchedule')
-                    ->label('')
-                    ->icon('heroicon-m-no-symbol')
-                    ->button()
-                    ->color('danger')
-                    ->size('sm')
-                    ->tooltip('Batalkan jadwal')
-                    ->visible(fn (Reporting $record) => $record->state === ReportingState::Scheduled)
-                    ->schema([
-                        Textarea::make('cancel_reason')
-                            ->label('Alasan pembatalan')
-                            ->required()
-                            ->maxLength(255)
-                            ->rows(2),
-                    ])
-                    ->modalHeading('Batalkan jadwal kunjungan')
-                    ->modalDescription('Jadwal akan keluar dari daftar kerja kamu, tapi riwayatnya tetap tersimpan.')
-                    ->modalSubmitActionLabel('Ya, batalkan')
-                    ->modalCancelActionLabel('Kembali')
-                    ->action(function (Reporting $record, array $data): void {
-                        $record->cancel($data['cancel_reason']);
-
-                        Notification::make()
-                            ->success()
-                            ->title('Jadwal dibatalkan')
-                            ->send();
                     }),
                 Action::make('updateReport')
                     ->label('Report')

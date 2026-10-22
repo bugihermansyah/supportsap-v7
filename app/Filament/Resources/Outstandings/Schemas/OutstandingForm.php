@@ -8,6 +8,7 @@ use App\Models\Location;
 use App\Models\Outstanding;
 use App\Models\Team;
 use App\Models\Unit;
+use App\Models\User;
 use Carbon\Carbon;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
@@ -160,6 +161,16 @@ class OutstandingForm
                                     foreach ($teams as $team) {
                                         $teamUsers = $team->users->pluck('name', 'id')->toArray();
                                         $options[$team->name] = $teamUsers;
+                                    }
+
+                                    $supportHoUsers = User::role('support_ho')
+                                        ->where('status', '!=', 0)
+                                        ->orderBy('name')
+                                        ->pluck('name', 'id')
+                                        ->toArray();
+
+                                    if ($supportHoUsers !== []) {
+                                        $options['Support HO'] = $supportHoUsers;
                                     }
 
                                     return $options;
