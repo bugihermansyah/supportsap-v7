@@ -138,8 +138,7 @@ class BorrowRequestsTable
                 Filter::make('date_from')
                     ->schema([
                         DatePicker::make('created_from')
-                            ->label('Created From')
-                            ->default(now()->subMonth()),
+                            ->label('Created From'),
                     ])
                     ->query(function ($query, $data) {
                         if (isset($data['created_from'])) {
@@ -149,8 +148,7 @@ class BorrowRequestsTable
                 Filter::make('date_to')
                     ->schema([
                         DatePicker::make('created_to')
-                            ->label('Created To')
-                            ->default(now()),
+                            ->label('Created To'),
                     ])
                     ->query(function ($query, $data) {
                         if (isset($data['created_to'])) {
