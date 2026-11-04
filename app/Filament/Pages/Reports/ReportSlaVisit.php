@@ -83,6 +83,13 @@ class ReportSlaVisit extends Page implements HasTable
                         $baseFilter($q);
                         $q->whereRaw('DATEDIFF(date_visit, date_in) > 3');
                     },
+                    'outstandings as remote_count' => function ($q) use ($baseFilter) {
+                        $baseFilter($q);
+                        $q->whereRaw(
+                            '(SELECT first_reporting.work FROM reportings AS first_reporting WHERE first_reporting.outstanding_id = outstandings.id ORDER BY first_reporting.created_at ASC, first_reporting.id ASC LIMIT 1) = ?',
+                            ['remote'],
+                        );
+                    },
                 ]);
             })
             ->columns([
@@ -100,6 +107,10 @@ class ReportSlaVisit extends Page implements HasTable
                     ->summarize(Sum::make()->label('Total')),
                 TextColumn::make('sla3_count')
                     ->label('SLA 3 (> 3)')
+                    ->sortable()
+                    ->summarize(Sum::make()->label('Total')),
+                TextColumn::make('remote_count')
+                    ->label('Remote')
                     ->sortable()
                     ->summarize(Sum::make()->label('Total')),
             ])
