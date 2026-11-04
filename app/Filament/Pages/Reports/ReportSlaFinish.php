@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Reports;
 
+use App\Enums\ReportStatus;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use App\Models\Product;
 use Filament\Pages\Page;
@@ -89,7 +90,8 @@ class ReportSlaFinish extends Page implements HasTable
                     },
                     'outstandings as temporary_count' => function ($q) use ($baseFilter) {
                         $baseFilter($q);
-                        $q->whereNotNull('date_finish')->where('is_temporary', 1);
+                        $q->whereHas('reportings', fn ($reportingQuery) => $reportingQuery
+                            ->where('status', ReportStatus::Temporary));
                     },
                 ]);
             })
