@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class LocationProductGroupStats extends StatsOverviewWidget
 {
+    protected static bool $isDiscovered = false;
+
     protected ?string $heading = 'Lokasi aktif & kontrak aktif per group product';
 
     protected int|string|array $columnSpan = 'full';
