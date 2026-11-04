@@ -3,8 +3,9 @@
 namespace App\Filament\Pages\Reports;
 
 use App\Enums\ReportStatus;
-use BezhanSalleh\FilamentShield\Traits\HasPageShield;
+use App\Filament\Widgets\ReportSlaVisitOverview;
 use App\Models\Product;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\Summarizers\Sum;
@@ -28,6 +29,21 @@ class ReportSlaFinish extends Page implements HasTable
     protected static string|\UnitEnum|null $navigationGroup = 'Support Reports';
 
     protected static ?int $navigationSort = 15;
+
+    protected function getHeaderWidgets(): array
+    {
+        return [ReportSlaVisitOverview::class];
+    }
+
+    public function getHeaderWidgetsColumns(): int | array
+    {
+        return 1;
+    }
+
+    public function getWidgetData(): array
+    {
+        return ['tableFilters' => $this->tableFilters];
+    }
 
     public function table(Table $table): Table
     {

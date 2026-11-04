@@ -15,8 +15,6 @@ class ReportSlaVisitOverview extends StatsOverviewWidget
     #[Reactive]
     public ?array $tableFilters = null;
 
-    protected ?string $heading = 'Laporan awal masuk';
-
     protected function getCachedStats(): array
     {
         return $this->getStats();
