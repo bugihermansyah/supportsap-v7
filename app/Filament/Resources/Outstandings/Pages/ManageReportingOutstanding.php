@@ -7,14 +7,12 @@ use App\Filament\Resources\Outstandings\OutstandingResource;
 use App\Models\Reporting;
 use BackedEnum;
 use Carbon\Carbon;
-use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
@@ -139,35 +137,15 @@ class ManageReportingOutstanding extends ManageRelatedRecords
                 // CreateAction::make(),
             ])
             ->recordActions([
-                // Jadwal yang tidak jadi dikunjungi ditutup di sini: barisnya tetap
-                // tersimpan sebagai riwayat, tapi keluar dari daftar kerja support.
-                Action::make('cancelSchedule')
-                    ->label('Batalkan jadwal')
-                    ->icon('heroicon-m-no-symbol')
-                    ->color('danger')
-                    ->visible(fn (Reporting $record) => in_array($record->state, ReportingState::openStates(), true))
-                    ->schema([
-                        Textarea::make('cancel_reason')
-                            ->label('Alasan pembatalan')
-                            ->required()
-                            ->maxLength(255)
-                            ->rows(2),
-                    ])
-                    ->modalHeading('Batalkan jadwal kunjungan')
-                    ->modalSubmitActionLabel('Ya, batalkan')
-                    ->modalCancelActionLabel('Kembali')
-                    ->action(function (Reporting $record, array $data): void {
-                        $record->cancel($data['cancel_reason']);
-
-                        Notification::make()
-                            ->success()
-                            ->title('Jadwal dibatalkan')
-                            ->send();
-                    }),
                 EditAction::make()
                     ->modalWidth(Width::ScreenExtraLarge),
                 ViewAction::make()
                     ->modalWidth(Width::ScreenExtraLarge),
+                DeleteAction::make()
+                    ->label('Hapus')
+                    ->modalHeading('Hapus reporting?')
+                    ->modalDescription('Reporting, penugasan support, lampiran, dan riwayat email terkait akan dihapus permanen. Data outstanding tetap disimpan.')
+                    ->modalSubmitActionLabel('Ya, hapus'),
             ])
             ->toolbarActions([
                 //

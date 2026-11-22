@@ -96,6 +96,11 @@ class Reporting extends Model implements HasMedia
         return $this->hasMany(ReportingUser::class);
     }
 
+    public function reportingEmails(): HasMany
+    {
+        return $this->hasMany(ReportingEmail::class);
+    }
+
     public function getLocationTitleAttribute(): string
     {
         return "{$this->outstanding?->location?->name} - ".($this->outstanding?->title);
@@ -170,6 +175,11 @@ class Reporting extends Model implements HasMedia
     protected static function booted()
     {
         static::deleting(function (Reporting $reporting) {
+            // Delete email records individually so their Spatie media is removed too.
+            $reporting->reportingEmails->each(function (ReportingEmail $reportingEmail) {
+                $reportingEmail->delete();
+            });
+
             $reporting->reportingUsers()->delete();
         });
 
