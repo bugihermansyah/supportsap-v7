@@ -54,7 +54,7 @@ enum BorrowRequestStatus: string implements HasColor, HasLabel, HasIcon
             self::PickedUp => 'success',
             self::WaitingReturn => 'warning',
             self::PartiallyReturned => 'warning',
-            self::Returned => 'success',
+            self::Returned => 'gray',
             self::Cancelled => 'danger',
             self::Retur => 'danger',
         };
