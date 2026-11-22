@@ -95,9 +95,9 @@ class CreateOutstanding extends CreateRecord
                     $reporterName = $outstanding->reporter_name ?? '-';
 
                     // Collect all support emails
-                    $supportEmails = User::whereIn('id', $data['user_id'])
-                        ->pluck('email')
-                        ->toArray();
+                    $assignedUsers = User::whereIn('id', $data['user_id'])->get();
+                    $supportEmails = $assignedUsers->pluck('email')->all();
+                    $supportNames = $assignedUsers->pluck('name')->all();
 
                     // Dispatch a single email job with multiple recipients
                     if (!empty($supportEmails)) {
@@ -109,12 +109,13 @@ class CreateOutstanding extends CreateRecord
                                 $locationName,
                                 $title,
                                 $reporter,
-                                $reporterName
+                                $reporterName,
+                                auth()->user()?->name ?? 'Pengguna',
+                                $supportNames,
                             )->onQueue('scheduleEmails');
                         }
                     }
 
-                    $assignedUsers = User::whereIn('id', $data['user_id'])->get();
                     foreach ($assignedUsers as $assignedUser) {
                         Notification::make()
                             ->title('New schedule')
@@ -170,9 +171,9 @@ class CreateOutstanding extends CreateRecord
                     $reporterName = $outstanding->reporter_name ?? '-';
 
                     // Collect all support emails
-                    $supportEmails = User::whereIn('id', $data['user_id'])
-                        ->pluck('email')
-                        ->toArray();
+                    $assignedUsers = User::whereIn('id', $data['user_id'])->get();
+                    $supportEmails = $assignedUsers->pluck('email')->all();
+                    $supportNames = $assignedUsers->pluck('name')->all();
 
                     // Dispatch a single email job with multiple recipients
                     if (!empty($supportEmails)) {
@@ -184,12 +185,13 @@ class CreateOutstanding extends CreateRecord
                                 $locationName,
                                 $title,
                                 $reporter,
-                                $reporterName
+                                $reporterName,
+                                auth()->user()?->name ?? 'Pengguna',
+                                $supportNames,
                             )->onQueue('scheduleEmails');
                         }
                     }
 
-                    $assignedUsers = User::whereIn('id', $data['user_id'])->get();
                     foreach ($assignedUsers as $assignedUser) {
                         Notification::make()
                             ->title('New schedule')

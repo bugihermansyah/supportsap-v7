@@ -21,7 +21,9 @@ class ScheduleMailJob implements ShouldQueue
         public string $locationName,
         public string $title,
         public string $reporter,
-        public string $reporterName
+        public string $reporterName,
+        public string $createdBy = 'Pengguna',
+        public array $supportNames = [],
     ) {}
 
     /**
@@ -29,7 +31,7 @@ class ScheduleMailJob implements ShouldQueue
      */
     public function handle(): void
     {
-        if (!empty($this->supportEmails)) {
+        if (! empty($this->supportEmails)) {
             Mail::to($this->supportEmails)->send(
                 new ScheduleMail(
                     $this->dateVisit,
@@ -37,7 +39,9 @@ class ScheduleMailJob implements ShouldQueue
                     $this->locationName,
                     $this->title,
                     $this->reporter,
-                    $this->reporterName
+                    $this->reporterName,
+                    $this->createdBy,
+                    $this->supportNames,
                 )
             );
         }

@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
@@ -23,7 +22,9 @@ class ScheduleMail extends Mailable
         public string $locationName,
         public string $title,
         public string $reporter,
-        public string $reporterName
+        public string $reporterName,
+        public string $createdBy = 'Pengguna',
+        public array $supportNames = [],
     ) {}
 
     /**
@@ -32,7 +33,7 @@ class ScheduleMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "[Schedule] {$this->companyAlias} - {$this->locationName} : {$this->title}",
+            subject: "[Jadwal] {$this->companyAlias} - {$this->locationName} : {$this->title}",
         );
     }
 
@@ -50,6 +51,8 @@ class ScheduleMail extends Mailable
                 'title' => $this->title,
                 'reporter' => $this->reporter,
                 'reporterName' => $this->reporterName,
+                'createdBy' => $this->createdBy,
+                'supportNames' => $this->supportNames,
             ],
         );
     }

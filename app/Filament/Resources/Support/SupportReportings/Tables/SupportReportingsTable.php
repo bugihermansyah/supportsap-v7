@@ -21,9 +21,13 @@ class SupportReportingsTable
             ->modifyQueryUsing(function (Builder $query) {
                 $user = auth()->user();
                 if ($user?->hasTeamScopedSupportRole() && $user->team_id) {
-                    $query->whereHas('users', function ($q) use ($user) {
-                        $q->where('team_id', $user->team_id);
-                    });
+                    if ($user->hasRole('head_support')) {
+                        $query->whereHas('outstanding.location', fn ($locationQuery) => $locationQuery
+                            ->where('team_id', $user->team_id));
+                    } else {
+                        $query->whereHas('users', fn ($supportQuery) => $supportQuery
+                            ->where('team_id', $user->team_id));
+                    }
                 }
             })
             ->recordUrl(

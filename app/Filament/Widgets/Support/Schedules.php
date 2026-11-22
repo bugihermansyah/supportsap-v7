@@ -5,6 +5,7 @@ namespace App\Filament\Widgets\Support;
 use App\Enums\OutstandingTypeProblem;
 use App\Enums\ReportingState;
 use App\Filament\Resources\Outstandings\Schemas\OutstandingForm;
+use App\Filament\Resources\Support\SupportReportings\SupportReportingResource;
 use App\Models\Location;
 use App\Models\Outstanding;
 use App\Models\Reporting;
@@ -380,28 +381,43 @@ class Schedules extends TableWidget
         foreach ($reportings as $reporting) {
             $outstanding = $reporting->outstanding;
             $targetLocation = $outstanding?->location ?? $location;
+            $headUsers = $targetLocation->team_id
+                ? User::role('head_support')
+                    ->where('team_id', $targetLocation->team_id)
+                    ->where('status', '!=', 0)
+                    ->get()
+                : collect();
+            $scheduleEmails = collect($supportEmails)
+                ->merge($headUsers->pluck('email'))
+                ->filter(fn ($email) => filled($email))
+                ->map(fn ($email) => trim((string) $email))
+                ->unique(fn ($email) => mb_strtolower($email))
+                ->values()
+                ->all();
 
-            if ($supportEmails && class_exists(\App\Jobs\ScheduleMailJob::class)) {
+            if ($scheduleEmails && class_exists(\App\Jobs\ScheduleMailJob::class)) {
                 \App\Jobs\ScheduleMailJob::dispatch(
-                    $supportEmails,
+                    $scheduleEmails,
                     $dateVisit,
                     $targetLocation->company->alias ?? 'SAP',
                     $targetLocation->name,
                     $outstanding?->title ?? '-',
                     $outstanding?->reporter ?? '-',
-                    $outstanding?->reporter_name ?? '-'
+                    $outstanding?->reporter_name ?? '-',
+                    auth()->user()?->name ?? 'Pengguna',
+                    $assignedUsers->pluck('name')->all(),
                 )->onQueue('scheduleEmails');
             }
 
-            foreach ($assignedUsers as $assignedUser) {
+            foreach ($assignedUsers->merge($headUsers)->unique('id') as $assignedUser) {
                 Notification::make()
                     ->title('Jadwal baru')
                     ->body("Jadwal baru di {$targetLocation->name} untuk problem: {$outstanding?->title} pada {$dateVisit}")
                     ->info()
                     ->actions([
                         Action::make('view')
-                            ->label('Lihat Jadwal')
-                            ->url(route('filament.admin.pages.schedule-dashboard'))
+                            ->label('Lihat Daily Reporting')
+                            ->url(SupportReportingResource::getUrl('index'))
                             ->markAsRead()
                             ->button(),
                     ])
