@@ -8,6 +8,7 @@ use App\Models\Reporting;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\RichEditor;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
@@ -119,12 +120,19 @@ class HeadSupportOpenOutstanding extends TableWidget
                     ->placeholder('-'),
                 TextColumn::make('outstanding.note')
                     ->label('Note')
-                    ->formatStateUsing(fn ($state) => filled($state) ? trim(strip_tags((string) $state)) : null)
+                    ->state(function (Reporting $record): string {
+                        $note = html_entity_decode(
+                            strip_tags((string) $record->outstanding?->note),
+                            ENT_QUOTES | ENT_HTML5,
+                        );
+                        $note = trim(str_replace("\u{00A0}", ' ', $note));
+
+                        return $note !== '' ? $note : '-';
+                    })
                     ->wrap()
                     ->limit(100)
                     ->tooltip(fn ($state) => filled($state) ? trim(strip_tags((string) $state)) : null)
                     ->searchable()
-                    ->placeholder('-')
                     ->action(
                         Action::make('editNote')
                             ->label('Edit Note')
@@ -133,9 +141,13 @@ class HeadSupportOpenOutstanding extends TableWidget
                                 RichEditor::make('note')
                                     ->label('Note')
                                     ->columnSpanFull(),
+                                DatePicker::make('revisit')
+                                    ->label('Tanggal Revisit')
+                                    ->native(true),
                             ])
                             ->fillForm(fn (Reporting $record): array => [
                                 'note' => $record->outstanding?->note,
+                                'revisit' => $record->revisit,
                             ])
                             ->action(function (Reporting $record, array $data): void {
                                 $outstanding = $record->outstanding;
@@ -147,10 +159,13 @@ class HeadSupportOpenOutstanding extends TableWidget
                                 $outstanding->update([
                                     'note' => $data['note'] ?? null,
                                 ]);
+                                $record->update([
+                                    'revisit' => $data['revisit'] ?? null,
+                                ]);
 
                                 Notification::make()
                                     ->success()
-                                    ->title('Note berhasil diperbarui')
+                                    ->title('Note dan tanggal revisit berhasil diperbarui')
                                     ->send();
                             }),
                     ),
