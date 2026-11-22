@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets\HeadSupport;
 
+use App\Enums\LocationStatus;
 use App\Enums\OutstandingStatus;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -83,14 +84,12 @@ class HeadSupportOverview extends StatsOverviewWidget
         }
 
         $counts = $countsQuery->first();
-        // Tambahan implementasi
-        $implementasiQuery = DB::table('outstandings')
-            ->join('locations', 'locations.id', '=', 'outstandings.location_id')
-            ->where('outstandings.is_implement', 1)
-            ->where('outstandings.status', '!=', 1); // status finish = 1
+        // Jumlah lokasi yang statusnya Implementation.
+        $implementasiQuery = DB::table('locations')
+            ->where('status', LocationStatus::Implementation);
 
         if ($user->team_id && ! $user->hasRole('admin')) {
-            $implementasiQuery->where('locations.team_id', $user->team_id);
+            $implementasiQuery->where('team_id', $user->team_id);
         }
 
         $totalImplementasi = $implementasiQuery->count();

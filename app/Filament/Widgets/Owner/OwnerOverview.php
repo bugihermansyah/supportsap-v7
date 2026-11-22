@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets\Owner;
 
+use App\Enums\LocationStatus;
 use App\Enums\OutstandingStatus;
 use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\StatsOverviewWidget;
@@ -49,9 +50,8 @@ class OwnerOverview extends StatsOverviewWidget
                 SUM(CASE WHEN latest.status = 4 THEN 1 ELSE 0 END) AS monitoring')
             ->first();
 
-        $totalImplementasi = DB::table('outstandings')
-            ->where('is_implement', 1)
-            ->where('status', '!=', 1)
+        $totalImplementasi = DB::table('locations')
+            ->where('status', LocationStatus::Implementation)
             ->count();
 
         return [
