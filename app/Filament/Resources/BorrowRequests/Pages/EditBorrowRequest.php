@@ -19,6 +19,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Schemas\Components\Utilities\Get;
 
 class EditBorrowRequest extends EditRecord
 {
@@ -92,7 +93,7 @@ class EditBorrowRequest extends EditRecord
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->visible(fn($record) => in_array($record->status?->value, ['approved', 'partially_returned']))
                 ->modalHeading('Request Return Unit')
-                ->modalDescription('Pilih barang dan sesuaikan quantity yang akan dikembalikan saat ini.')
+                ->modalDescription('Pilih barang dan jumlah yang dikembalikan. Isi tanggal pemasangan aktual untuk unit yang dikembalikan.')
                 ->schema([
                     Textarea::make('pickup_address')
                         ->label('Pickup Address')
@@ -110,6 +111,8 @@ class EditBorrowRequest extends EditRecord
                                 ->width('70px'),
                             TableColumn::make('Q.T.R')
                                 ->width('70px'),
+                            TableColumn::make('Installation Date')
+                                ->width('150px'),
                             TableColumn::make('Claim')
                                 ->width('80px'),
                             TableColumn::make('Condition'),
@@ -130,9 +133,14 @@ class EditBorrowRequest extends EditRecord
                             TextInput::make('return_qty')
                                 ->label('Qty To Return')
                                 ->numeric()
+                                ->live(onBlur: true)
                                 ->required()
                                 ->minValue(0)
                                 ->maxValue(fn($get) => $get('qty') - $get('returned_qty_before')),
+                            DatePicker::make('installation_date')
+                                ->label('Installation Date')
+                                ->native(true)
+                                ->required(fn (Get $get): bool => (int) $get('return_qty') > 0),
                             Checkbox::make('is_claim')
                                 ->label('Claim'),
                             TextInput::make('damage')
@@ -155,6 +163,7 @@ class EditBorrowRequest extends EditRecord
                                 'qty' => $unit->qty,
                                 'returned_qty_before' => $unit->returned_qty ?? 0,
                                 'return_qty' => max(0, $unit->qty - ($unit->returned_qty ?? 0)),
+                                'installation_date' => $unit->installation_date?->toDateString(),
                                 'is_claim' => $unit->is_claim,
                                 'damage' => $unit->damage,
                             ];
@@ -166,7 +175,7 @@ class EditBorrowRequest extends EditRecord
                     $log->borrow_request_id = $record->id;
                     $log->action_by = auth()->id();
                     $log->action = 'waiting_return';
-                    
+
                     $logDetails = [];
                     foreach ($data['return_items'] as $item) {
                         if ($item['return_qty'] > 0) {
@@ -174,6 +183,9 @@ class EditBorrowRequest extends EditRecord
                             if ($unitModel) {
                                 if (isset($item['is_claim'])) $unitModel->is_claim = $item['is_claim'];
                                 if (isset($item['damage'])) $unitModel->damage = $item['damage'];
+                                if (! empty($item['installation_date'])) {
+                                    $unitModel->installation_date = $item['installation_date'];
+                                }
                                 $unitModel->save();
                             }
 
@@ -183,18 +195,19 @@ class EditBorrowRequest extends EditRecord
                                 'qty' => $item['return_qty'],
                                 'damage' => $item['damage'] ?? null,
                                 'is_claim' => $item['is_claim'] ?? null,
+                                'installation_date' => $item['installation_date'] ?? null,
                             ];
                         }
                     }
                     $log->details = $logDetails;
                     $log->save();
-                    
+
                     $record->update([
                         'status' => 'waiting_return',
                         'pickup_address' => $data['pickup_address'] ?? null,
                         'pickup_contact' => $data['pickup_contact'] ?? null,
                     ]);
-                    
+
                     $admins = \App\Models\User::role('admin')->get();
                     \Filament\Notifications\Notification::make()
                         ->title('Return Requested')
@@ -207,7 +220,7 @@ class EditBorrowRequest extends EditRecord
                                 ->markAsRead(),
                         ])
                         ->sendToDatabase($admins);
-                    
+
                     return redirect(request()->header('Referer'));
                 }),
 
@@ -286,7 +299,7 @@ class EditBorrowRequest extends EditRecord
                         ->where('action', 'waiting_return')
                         ->latest()
                         ->first();
-                        
+
                     $intendedReturns = [];
                     $intendedDamage = [];
                     if ($lastLog && is_array($lastLog->details)) {
@@ -317,7 +330,7 @@ class EditBorrowRequest extends EditRecord
                 })
                 ->action(function (array $data, \App\Models\BorrowRequest $record) {
                     $allReturned = true;
-                    
+
                     foreach ($data['return_items'] as $item) {
                         $unit = \App\Models\BorrowRequestUnit::find($item['id']);
                         if ($unit) {
@@ -329,7 +342,7 @@ class EditBorrowRequest extends EditRecord
                                 $unit->is_claim = $item['is_claim'];
                             }
                             $unit->save();
-                            
+
                             if ($unit->returned_qty < $unit->qty) {
                                 $allReturned = false;
                             }
@@ -340,7 +353,7 @@ class EditBorrowRequest extends EditRecord
                     $log->borrow_request_id = $record->id;
                     $log->action_by = auth()->id();
                     $log->action = $allReturned ? 'returned' : 'partially_returned';
-                    
+
                     $logDetails = [];
                     foreach ($data['return_items'] as $item) {
                         if ($item['return_qty'] > 0) {
@@ -356,7 +369,7 @@ class EditBorrowRequest extends EditRecord
                     }
                     $log->details = $logDetails;
                     $log->save();
-                    
+
                     $record->update([
                         'status' => $allReturned ? 'returned' : 'partially_returned',
                         'take_no' => $data['take_no'],
@@ -403,7 +416,7 @@ class EditBorrowRequest extends EditRecord
                         ];
                     })->toArray();
                     $log->save();
-                    
+
                     $record->update(['status' => 'cancelled']);
 
                     if ($record->requester) {
@@ -417,7 +430,7 @@ class EditBorrowRequest extends EditRecord
                             ])
                             ->sendToDatabase($record->requester);
                     }
-                    
+
                     return redirect(request()->header('Referer'));
                 }),
 
@@ -460,7 +473,7 @@ class EditBorrowRequest extends EditRecord
                     $log->date = $data['date'];
                     $log->note = $data['note'];
                     $log->created_at = $data['created_at'];
-                    
+
                     // Copy snapshot details from current units
                     $log->details = $record->units->map(function ($unit) {
                         return [
@@ -477,7 +490,7 @@ class EditBorrowRequest extends EditRecord
                         'log_status' => $data['action'],
                         'log_at' => $data['date']
                     ]);
-                    
+
                     return redirect(request()->header('Referer'));
                 }),
 

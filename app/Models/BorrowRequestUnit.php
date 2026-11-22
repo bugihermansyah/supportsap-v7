@@ -7,6 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BorrowRequestUnit extends Model
 {
+    protected function casts(): array
+    {
+        return [
+            'installation_date' => 'date',
+        ];
+    }
+
     public function borrowRequest(): BelongsTo
     {
         return $this->belongsTo(BorrowRequest::class);
