@@ -5,8 +5,8 @@ namespace App\Enums;
 use Filament\Support\Contracts\HasLabel;
 
 /**
- * Alasan sebuah laporan berstatus Pending SAP / Pending Client.
- * Wajib diisi PIC saat memilih kedua status tersebut.
+ * Alasan sebuah laporan berstatus Pending SAP, Pending Client, atau Temporary.
+ * Wajib diisi PIC saat memilih status-status tersebut.
  */
 enum PendingReason: string implements HasLabel
 {
@@ -40,10 +40,10 @@ enum PendingReason: string implements HasLabel
     /** Status yang mewajibkan alasan pending. */
     public static function requiredForStatuses(): array
     {
-        return [ReportStatus::Pending, ReportStatus::PendingClient];
+        return [ReportStatus::Pending, ReportStatus::PendingClient, ReportStatus::Temporary];
     }
 
-    /** @return array<int, string> nilai status ('0','2') untuk dipakai di closure form */
+    /** @return array<int, string> nilai status ('0','2','3') untuk dipakai di closure form */
     public static function requiredForStatusValues(): array
     {
         return array_map(fn (ReportStatus $status) => $status->value, self::requiredForStatuses());
