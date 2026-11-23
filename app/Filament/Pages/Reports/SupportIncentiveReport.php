@@ -43,11 +43,6 @@ class SupportIncentiveReport extends Page implements HasTable
 
     protected static ?int $navigationSort = 17;
 
-    public function getSubheading(): ?string
-    {
-        return 'Support dapat mengajukan sendiri. Helpdesk juga dapat mengecek data yang memenuhi syarat, lalu meninjau dan menyetujui pengajuan.';
-    }
-
     public function table(Table $table): Table
     {
         return $table

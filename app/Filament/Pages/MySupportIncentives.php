@@ -13,6 +13,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class MySupportIncentives extends Page implements HasTable
 {
@@ -31,9 +32,9 @@ class MySupportIncentives extends Page implements HasTable
 
     protected static ?int $navigationSort = 16;
 
-    public function getSubheading(): ?string
+    public function getSubheading(): ?HtmlString
     {
-        return 'Pilih reporting Visit yang menjadi bukti pengajuan. Reporting harus sudah dikirim dan memiliki Form Support.';
+        return new HtmlString('<span class="text-sm whitespace-nowrap">Pilih reporting Visit yang menjadi bukti pengajuan. Reporting harus sudah dikirim dan memiliki Form Support.</span>');
     }
 
     public function table(Table $table): Table
