@@ -42,7 +42,7 @@ class ClientNotificationReport extends Page implements HasTable
 
     protected static ?string $navigationLabel = 'Notifikasi Client';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Support Reports';
+    protected static string|\UnitEnum|null $navigationGroup = 'Work';
 
     protected static ?int $navigationSort = 20;
 

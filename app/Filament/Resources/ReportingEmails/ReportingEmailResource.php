@@ -25,7 +25,7 @@ class ReportingEmailResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPaperAirplane;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Support';
+    protected static string|\UnitEnum|null $navigationGroup = 'Support Reports';
     
     protected static ?string $navigationLabel = 'Outbox Mail';
     

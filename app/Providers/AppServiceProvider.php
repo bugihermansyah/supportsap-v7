@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Policies\ActivityPolicy;
 use App\Policies\ExceptionPolicy;
+use App\Models\SupportHoliday;
+use App\Policies\SupportHolidayPolicy;
 use BezhanSalleh\FilamentExceptions\Models\Exception;
 use BezhanSalleh\FilamentShield\Facades\FilamentShield;
 use Filament\Notifications\Livewire\Notifications;
@@ -25,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     protected array $policies = [
         Activity::class => ActivityPolicy::class,
         Exception::class => ExceptionPolicy::class,
+        SupportHoliday::class => SupportHolidayPolicy::class,
     ];
 
     public function register(): void

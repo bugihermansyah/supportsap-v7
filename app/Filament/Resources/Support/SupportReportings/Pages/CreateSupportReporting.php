@@ -9,8 +9,4 @@ class CreateSupportReporting extends CreateRecord
 {
     protected static string $resource = SupportReportingResource::class;
 
-    // protected function afterCreate(): void
-    // {
-    //     \App\Jobs\CalculateSupportTravelDistance::dispatch($this->record->id);
-    // }
 }

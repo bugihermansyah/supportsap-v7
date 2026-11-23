@@ -20,7 +20,7 @@ class SupportPerformance extends BaseDashboard
     use HasFiltersForm;
     use HasPageShield;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Main';
+    protected static string|\UnitEnum|null $navigationGroup = 'Support Reports';
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar-square';
 
