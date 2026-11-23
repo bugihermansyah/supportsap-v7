@@ -181,7 +181,7 @@ class SupportIncentiveReport extends Page implements HasTable
             ])
             ->recordActions([
                 Action::make('chooseEvidence')
-                    ->label(fn (SupportIncentive $record): string => $record->reporting_id ? 'Ganti bukti' : 'Pilih bukti')
+                    ->label('Ubah Lokasi')
                     ->icon('heroicon-o-map-pin')
                     ->visible(fn (SupportIncentive $record): bool => $record->status === SupportIncentiveStatus::Pending)
                     ->schema([
