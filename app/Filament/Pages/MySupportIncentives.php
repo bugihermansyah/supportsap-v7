@@ -45,7 +45,7 @@ class MySupportIncentives extends Page implements HasTable
             ->defaultSort('work_date', 'desc')
             ->columns([
                 TextColumn::make('work_date')
-                    ->label('Tanggal Kerja')
+                    ->label('Tanggal')
                     ->date('d M Y')
                     ->sortable(),
                 TextColumn::make('reporting.outstanding.location.name')

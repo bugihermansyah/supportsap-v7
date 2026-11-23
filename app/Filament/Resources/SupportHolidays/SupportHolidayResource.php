@@ -123,7 +123,7 @@ class SupportHolidayResource extends Resource
                                     ->required(),
                             ]),
                         Section::make('Penerapan tarif')
-                            ->description('Kandidat yang masih menunggu verifikasi akan diperbarui. Insentif yang sudah disetujui atau ditolak tetap menyimpan tarif sebelumnya.'),
+                            ->description('Data insentif yang masih menunggu verifikasi akan diperbarui. Insentif yang sudah disetujui atau ditolak tetap menyimpan tarif sebelumnya.'),
                     ])
                     ->fillForm(fn (): array => app(SupportIncentiveRates::class)->currentSettings())
                     ->modalHeading('Atur Tarif Insentif')
@@ -134,7 +134,7 @@ class SupportHolidayResource extends Resource
                         Notification::make()
                             ->success()
                             ->title('Tarif insentif disimpan')
-                            ->body('Tarif kandidat yang masih menunggu verifikasi juga telah diperbarui.')
+                            ->body('Tarif untuk insentif yang masih menunggu verifikasi juga telah diperbarui.')
                             ->send();
                     }),
                 CreateAction::make()

@@ -85,6 +85,75 @@ class SupportIncentiveClaimService
         });
     }
 
+    /** Scan eligible reports and create any missing candidates for Helpdesk review. */
+    public function createMissingCandidates(string $from, string $until): int
+    {
+        $holidays = SupportHoliday::query()
+            ->whereBetween('holiday_date', [$from, $until])
+            ->get()
+            ->keyBy(fn (SupportHoliday $holiday): string => $holiday->holiday_date->toDateString());
+
+        $created = 0;
+
+        Reporting::query()
+            ->with(['users.roles'])
+            ->whereBetween('date_visit', [$from, $until])
+            ->where('work', 'visit')
+            ->whereNotNull('status')
+            ->whereHas('media', fn (Builder $query) => $query->where('collection_name', 'form_support'))
+            ->whereHas('users.roles', fn (Builder $query) => $query->whereIn('name', SupportIncentive::ELIGIBLE_SUPPORT_ROLES))
+            ->where(function (Builder $query) use ($from, $until): void {
+                $query
+                    ->whereRaw('DAYOFWEEK(reportings.date_visit) IN (1, 7)')
+                    ->orWhereIn('reportings.date_visit', SupportHoliday::query()
+                        ->whereBetween('holiday_date', [$from, $until])
+                        ->select('holiday_date'));
+            })
+            ->orderBy('id')
+            ->chunkById(100, function ($reportings) use ($holidays, &$created): void {
+                foreach ($reportings as $reporting) {
+                    $date = CarbonImmutable::parse($reporting->date_visit);
+                    $holiday = $holidays->get($date->toDateString());
+                    $category = $this->categoryFor($date, $holiday);
+
+                    if (! $category) {
+                        continue;
+                    }
+
+                    foreach ($reporting->users as $support) {
+                        if (! $support->hasAnyRole(SupportIncentive::ELIGIBLE_SUPPORT_ROLES)) {
+                            continue;
+                        }
+
+                        $incentive = SupportIncentive::query()->firstOrNew([
+                            'support_user_id' => $support->id,
+                            'work_date' => $date->toDateString(),
+                        ]);
+
+                        if ($incentive->exists) {
+                            if ($incentive->status === SupportIncentiveStatus::Pending && ! $incentive->reporting_id) {
+                                $incentive->update(['reporting_id' => $reporting->id]);
+                            }
+
+                            continue;
+                        }
+
+                        $incentive->fill([
+                            'reporting_id' => $reporting->id,
+                            'category' => $category,
+                            'holiday_name' => $holiday?->name,
+                            'rate' => $this->rates->forCategory($category),
+                            'status' => SupportIncentiveStatus::Pending,
+                        ]);
+                        $incentive->save();
+                        $created++;
+                    }
+                }
+            });
+
+        return $created;
+    }
+
     private function eligibleReportingQuery(User $support): Builder
     {
         return Reporting::query()

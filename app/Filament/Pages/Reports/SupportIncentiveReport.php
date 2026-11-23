@@ -9,6 +9,7 @@ use App\Models\SupportIncentive;
 use App\Models\Team;
 use App\Models\User;
 use App\Exports\SupportIncentiveExport;
+use App\Services\SupportIncentiveClaimService;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -44,7 +45,7 @@ class SupportIncentiveReport extends Page implements HasTable
 
     public function getSubheading(): ?string
     {
-        return 'Support mengajukan insentif dengan memilih reporting dan Form Support. Helpdesk memeriksa lalu menyetujui atau menolak pengajuan.';
+        return 'Support dapat mengajukan sendiri. Helpdesk juga dapat mengecek data yang memenuhi syarat, lalu meninjau dan menyetujui pengajuan.';
     }
 
     public function table(Table $table): Table
@@ -58,7 +59,7 @@ class SupportIncentiveReport extends Page implements HasTable
             ->defaultSort('work_date', 'desc')
             ->columns([
                 TextColumn::make('work_date')
-                    ->label('Tanggal Kerja')
+                    ->label('Tanggal')
                     ->date('d M Y')
                     ->sortable(),
                 TextColumn::make('supportUser.name')
@@ -70,8 +71,8 @@ class SupportIncentiveReport extends Page implements HasTable
                     ->placeholder('HO')
                     ->sortable(),
                 TextColumn::make('reporting.outstanding.location.name')
-                    ->label('Lokasi Bukti')
-                    ->placeholder('Bukti belum dipilih')
+                    ->label('Lokasi')
+                    ->placeholder('Lokasi belum dipilih')
                     ->searchable(),
                 TextColumn::make('category')
                     ->label('Kategori')
@@ -97,7 +98,7 @@ class SupportIncentiveReport extends Page implements HasTable
             ])
             ->filters([
                 Filter::make('work_date')
-                    ->label('Tanggal Kerja')
+                    ->label('Tanggal')
                     ->schema([
                         DatePicker::make('from')->label('Dari'),
                         DatePicker::make('until')->label('Sampai'),
@@ -135,6 +136,41 @@ class SupportIncentiveReport extends Page implements HasTable
                     ->default(SupportIncentiveStatus::Pending->value),
             ])
             ->headerActions([
+                Action::make('pullCandidates')
+                    ->label('Cek Data Insentif')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('primary')
+                    ->modalHeading('Cek Data Insentif')
+                    ->modalDescription('Sistem memeriksa reporting Visit yang sudah dikirim, memiliki Form Support, dan jatuh pada akhir pekan atau hari libur terdaftar. Data yang ditemukan masuk dengan status Menunggu Verifikasi.')
+                    ->schema([
+                        DatePicker::make('from')
+                            ->label('Dari tanggal')
+                            ->default(now()->startOfMonth())
+                            ->required(),
+                        DatePicker::make('until')
+                            ->label('Sampai tanggal')
+                            ->default(now()->endOfMonth())
+                            ->afterOrEqual('from')
+                            ->required(),
+                    ])
+                    ->action(function (array $data): void {
+                        $created = app(SupportIncentiveClaimService::class)
+                            ->createMissingCandidates($data['from'], $data['until']);
+                        $this->tableFilters['work_date'] = [
+                            'from' => $data['from'],
+                            'until' => $data['until'],
+                        ];
+                        $this->tableFilters['status']['value'] = SupportIncentiveStatus::Pending->value;
+                        $this->resetPage();
+
+                        Notification::make()
+                            ->success()
+                            ->title('Cek data selesai')
+                            ->body($created > 0
+                                ? "{$created} data insentif baru masuk untuk ditinjau. Data yang sudah diajukan tidak dibuat ulang."
+                                : 'Tidak ada data insentif baru yang memenuhi syarat pada rentang tanggal tersebut.')
+                            ->send();
+                    }),
                 Action::make('exportApproved')
                     ->label('Ekspor XLSX')
                     ->icon('heroicon-o-document-arrow-down')
